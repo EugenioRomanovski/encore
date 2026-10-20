@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..700,0..1,0&display=block">
+<style>
+:root,[data-theme]{--page:#060608;--bg:#0E0E12;--s1:#1A1A22;--s2:#252530;--seg:#363642;--line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.16);--tx:#F5F2EE;--tx2:rgba(245,242,238,.66);--tx3:rgba(245,242,238,.42);--mag:#FF4F9A;--vi:#B4A6FF;--ok:#3DDC97;--okbg:rgba(61,220,151,.14);--hdr:rgba(14,14,18,.86);--tab:rgba(20,20,26,.84);--tog:rgba(255,255,255,.16);--af:rgba(255,46,136,.08);--map:#15151C;--mapl:rgba(255,255,255,.035);--road:rgba(255,255,255,.09);--water:rgba(123,97,255,.18);
+--mapbg:linear-gradient(172deg,transparent 64%,var(--water) 64%,var(--water) 73%,transparent 73%),linear-gradient(32deg,transparent 47%,var(--road) 47%,var(--road) 50%,transparent 50%),linear-gradient(-58deg,transparent 60%,var(--road) 60%,var(--road) 62%,transparent 62%),linear-gradient(98deg,transparent 22%,var(--road) 22%,var(--road) 23.5%,transparent 23.5%),repeating-linear-gradient(0deg,var(--mapl) 0 1px,transparent 1px 22px),repeating-linear-gradient(90deg,var(--mapl) 0 1px,transparent 1px 22px),var(--map);
+--grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+[data-theme="light"]{--page:#E2DDD4;--bg:#F7F4EF;--s1:#FFFFFF;--s2:#EFEBE4;--seg:#FFFFFF;--line:rgba(22,19,26,.08);--line2:rgba(22,19,26,.18);--tx:#16131A;--tx2:rgba(22,19,26,.64);--tx3:rgba(22,19,26,.45);--mag:#D61F70;--vi:#5B48D0;--ok:#0F8F5B;--okbg:rgba(15,143,91,.12);--hdr:rgba(247,244,239,.88);--tab:rgba(250,248,244,.88);--tog:rgba(22,19,26,.14);--af:rgba(214,31,112,.06);--map:#ECE7DF;--mapl:rgba(0,0,0,.045);--road:#FFFFFF;--water:rgba(91,72,208,.14)}
+body{margin:0;background:#060608;-webkit-font-smoothing:antialiased}
+i{font-family:'Material Symbols Rounded';font-style:normal;font-weight:400;font-size:22px;line-height:1;display:inline-block;letter-spacing:normal;white-space:nowrap;font-variation-settings:'FILL' 0,'wght' 400;user-select:none;flex:none}
+input,textarea{font:inherit;color:inherit}
+input::placeholder,textarea::placeholder{color:var(--tx3)}
+*::-webkit-scrollbar{display:none}
+a{color:var(--mag)}a:hover{color:#FF8A2B}
+@keyframes enc-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes enc-up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes enc-fade{from{opacity:0}to{opacity:1}}
+@keyframes enc-pulse{0%,100%{transform:scale(.6);opacity:.9}70%{transform:scale(1.6);opacity:0}}
+@keyframes enc-scan{0%{top:4%}100%{top:94%}}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="min-height:100vh;background:var(--page);color:var(--tx);font-family:Inter,system-ui,sans-serif;display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:48px;padding:48px 32px;box-sizing:border-box">
+
+<div style="width:230px;flex:none;display:flex;flex-direction:column;gap:22px;position:sticky;top:40px">
+  <div>
+    <div style="font:400 52px/1 Anton,Impact,sans-serif;letter-spacing:.02em;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);-webkit-background-clip:text;background-clip:text;color:transparent">ENCORE</div>
+    <div style="font:500 13px/1.45 Inter;color:var(--tx2);margin-top:6px">Concert memory journal · iPhone 15 Pro prototype. Everything inside the phone is tappable.</div>
+  </div>
+  <div style="display:flex;height:36px;padding:3px;border-radius:11px;background:var(--s1);border:1px solid var(--line);box-sizing:border-box">
+    <div onClick="{{ setDark }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;font:600 13px Inter;cursor:pointer;background:{{ thDarkBg }};color:var(--tx)"><i style="font-size:16px">dark_mode</i>Dark</div>
+    <div onClick="{{ setLight }}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;font:600 13px Inter;cursor:pointer;background:{{ thLightBg }};color:var(--tx)"><i style="font-size:16px">light_mode</i>Light</div>
+  </div>
+  <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="5">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="font:500 10px/1 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--tx3);padding:0 10px 6px">{{ g.title }}</div>
+      <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+        <div onClick="{{ it.go }}" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font:500 14px Inter;cursor:pointer;color:{{ it.c }};background:{{ it.bg }}"><span>{{ it.label }}</span><span style="font:500 10px 'IBM Plex Mono',monospace;color:var(--tx3)">{{ it.n }}</span></div>
+      </sc-for>
+    </div>
+  </sc-for>
+</div>
+
+<div style="flex:none;padding:12px;border-radius:68px;background:linear-gradient(145deg,#45454c 0%,#1b1b1f 38%,#2e2e34 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 50px 120px -40px rgba(255,46,136,.45),0 30px 80px -20px rgba(0,0,0,.6)">
+<div style="position:relative;width:393px;height:852px;border-radius:56px;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;isolation:isolate;box-shadow:0 0 0 4px #000">
+
+<sc-if value="{{ s.memories }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:sticky;top:0;z-index:5;padding:54px 0 10px;background:var(--hdr);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 12px">
+      <div style="font:800 34px/1 Inter;letter-spacing:-.035em">Memories</div>
+      <div style="display:flex;gap:8px">
+        <div style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box"><i>search</i></div>
+        <div style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box"><i>tune</i></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 20px;overflow-x:auto">
+      <sc-for list="{{ yearChips }}" as="y" hint-placeholder-count="4">
+        <div onClick="{{ y.pick }}" style="flex:none;height:36px;padding:0 18px;border-radius:18px;display:flex;align-items:center;font:600 14px Inter;cursor:pointer;box-sizing:border-box;background:{{ y.bg }};color:{{ y.color }};border:1px solid {{ y.border }}">{{ y.label }}</div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="padding:0 16px 120px">
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+      <div style="position:sticky;top:152px;z-index:3;display:flex;align-items:center;gap:12px;padding:14px 4px 12px;background:var(--bg)">
+        <span style="font:400 28px/1 Anton,Impact,sans-serif;letter-spacing:.03em">{{ g.year }}</span>
+        <div style="flex:1;border-top:1.5px dashed var(--line2)"></div>
+        <span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:var(--tx3)">{{ g.count }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;padding-bottom:10px">
+        <sc-for list="{{ g.items }}" as="m" hint-placeholder-count="2">
+          <div onClick="{{ m.open }}" style="position:relative;height:340px;border-radius:20px;overflow:hidden;cursor:pointer;background:{{ m.ph }};box-shadow:0 22px 44px -26px {{ m.glow }}">
+            <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.22;mix-blend-mode:overlay;pointer-events:none"></div>
+            <div style="position:absolute;top:16px;left:16px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.4)">CONCERT PHOTO</div>
+            <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:14px;background:rgba(10,10,14,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font:600 12px Inter"><i style="font-size:15px">photo_library</i>{{ m.photos }}</div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:90px 18px 18px;background:linear-gradient(180deg,transparent,rgba(8,8,12,.92));color:#fff">
+              <div style="display:flex;gap:1px;margin-bottom:8px"><sc-for list="{{ m.stars }}" as="st" hint-placeholder-count="5"><i style="font-size:16px;font-variation-settings:'FILL' 1;color:{{ st.c }}">star</i></sc-for></div>
+              <div style="font:400 44px/.94 Anton,Impact,sans-serif;text-transform:uppercase;letter-spacing:.005em;text-wrap:balance">{{ m.artist }}</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px">
+                <div style="display:flex;align-items:center;gap:4px;font:500 14px Inter;color:rgba(255,255,255,.85);min-width:0"><i style="font-size:17px;color:#FF7AB0;font-variation-settings:'FILL' 1">location_on</i><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.venue }} · {{ m.city }}</span></div>
+                <div style="flex:none;padding:5px 8px;border:1px dashed rgba(255,255,255,.45);border-radius:5px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em">{{ m.date }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.memory }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:relative;height:470px;background:{{ mem.ph }}">
+    <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.24;mix-blend-mode:overlay"></div>
+    <div style="position:absolute;top:116px;left:20px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.4)">HERO PHOTO</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,8,12,.5) 0%,transparent 24%,transparent 42%,rgba(8,8,12,.9) 100%)"></div>
+    <div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between">
+      <div onClick="{{ backMem }}" style="width:44px;height:44px;border-radius:22px;background:rgba(20,18,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer"><i style="font-size:20px">arrow_back_ios_new</i></div>
+      <div style="display:flex;gap:8px">
+        <div style="width:44px;height:44px;border-radius:22px;background:rgba(20,18,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;align-items:center;justify-content:center"><i style="font-size:20px">ios_share</i></div>
+        <div style="width:44px;height:44px;border-radius:22px;background:rgba(20,18,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;align-items:center;justify-content:center"><i style="font-size:20px">more_horiz</i></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:46px;color:#fff">
+      <div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;opacity:.85">{{ mem.tour }}</div>
+      <div style="font:400 66px/.9 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:8px;text-wrap:balance">{{ mem.artist }}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
+        <div style="padding:5px 8px;border:1px dashed rgba(255,255,255,.5);border-radius:5px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em">{{ mem.dow }} {{ mem.date }}</div>
+        <div style="display:flex;align-items:center;gap:4px;font:500 14px Inter;opacity:.9"><i style="font-size:17px;color:#FF7AB0;font-variation-settings:'FILL' 1">location_on</i>{{ mem.venue }}, {{ mem.city }}</div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;margin-top:-26px;border-radius:28px 28px 0 0;background:var(--bg);padding:22px 20px 60px;display:flex;flex-direction:column;gap:30px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ mem.tags }}" as="t" hint-placeholder-count="2">
+        <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 12px 0 6px;border-radius:6px;color:#fff;font:700 11px/1 Inter;letter-spacing:.12em;text-transform:uppercase;background-color:{{ t.bg }};background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.09) 0 2px,transparent 2px 6px)"><span style="width:14px;height:14px;border-radius:7px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 3px rgba(255,255,255,.4)"></span>{{ t.label }}</div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">PHOTOS &amp; VIDEOS</span><span style="font:600 14px Inter;color:var(--mag)">See all {{ mem.photos }}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:108px;gap:6px">
+        <sc-for list="{{ mem.gallery }}" as="p" hint-placeholder-count="6">
+          <div style="position:relative;border-radius:14px;overflow:hidden;background:{{ p.ph }};grid-column:{{ p.col }};grid-row:{{ p.row }}">
+            <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.22;mix-blend-mode:overlay"></div>
+            <sc-if value="{{ p.vid }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:2px;padding:2px 6px 2px 3px;border-radius:8px;background:rgba(0,0,0,.5);color:#fff;font:600 11px Inter"><i style="font-size:16px;font-variation-settings:'FILL' 1">play_arrow</i>{{ p.dur }}</div></sc-if>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 26px Anton,Impact,sans-serif;color:#fff">{{ p.more }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">VENUE</span>
+      <div style="border-radius:20px;overflow:hidden;background:var(--s1);border:1px solid var(--line)">
+        <div style="position:relative;height:140px;background:var(--mapbg)">
+          <div style="position:absolute;left:50%;top:58%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:35px;background:radial-gradient(circle,rgba(255,46,136,.4),transparent 70%)"></div>
+          <div style="position:absolute;left:50%;top:58%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:10px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(255,46,136,.7)"></div>
+          <div style="position:absolute;left:50%;top:58%;transform:translate(-50%,-46px);padding:5px 9px;border-radius:8px;background:var(--s1);font:600 12px Inter;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.25)">{{ mem.venue }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
+          <i style="color:var(--mag);font-variation-settings:'FILL' 1">location_on</i>
+          <div style="flex:1;min-width:0"><div style="font:600 15px Inter">{{ mem.venue }}</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">{{ mem.addr }}</div></div>
+          <i style="color:var(--tx3)">chevron_right</i>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">SETLIST</span><span style="font:500 12px Inter;color:var(--tx3)">via setlist sync</span></div>
+      <div style="background:var(--s1);border-radius:20px;border:1px solid var(--line);padding:6px 0">
+        <sc-for list="{{ mem.setlist }}" as="x" hint-placeholder-count="6">
+          <sc-if value="{{ x.encFirst }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:12px 16px 4px"><span style="font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.2em;color:var(--mag)">ENCORE</span><div style="flex:1;border-top:1.5px dashed var(--line2)"></div></div></sc-if>
+          <div style="display:flex;align-items:center;gap:14px;padding:10px 16px"><span style="width:20px;font:500 12px 'IBM Plex Mono',monospace;color:var(--tx3)">{{ x.n }}</span><span style="font:500 15px Inter">{{ x.song }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">MY NOTES</span><span style="font:600 14px Inter;color:var(--mag)">Edit</span></div>
+      <div style="background:var(--s1);border-radius:20px;border:1px solid var(--line);padding:18px">
+        <div style="font:400 44px/.6 Anton,Impact,sans-serif;background:linear-gradient(110deg,#FF2E88,#FF8A2B);-webkit-background-clip:text;background-clip:text;color:transparent;height:22px">“</div>
+        <div style="font:400 16px/1.55 Inter;text-wrap:pretty">{{ mem.notes }}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--s1);border-radius:20px;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">RATING</span>
+        <div style="display:flex"><sc-for list="{{ mem.starsT }}" as="st" hint-placeholder-count="5"><i style="font-size:24px;font-variation-settings:'FILL' 1;color:{{ st.c }}">star</i></sc-for></div>
+        <span style="font:600 14px Inter">{{ mem.rlabel }}</span>
+      </div>
+      <div style="background:var(--s1);border-radius:20px;border:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">WENT WITH</span>
+        <div style="display:flex">
+          <sc-for list="{{ mem.people }}" as="pp" hint-placeholder-count="2"><div style="width:36px;height:36px;margin-right:-8px;border-radius:18px;border:2px solid var(--s1);display:flex;align-items:center;justify-content:center;color:#fff;font:700 12px Inter;background:{{ pp.bg }}">{{ pp.i }}</div></sc-for>
+          <div style="width:36px;height:36px;border-radius:18px;border:1.5px dashed var(--line2);display:flex;align-items:center;justify-content:center;margin-left:14px;box-sizing:border-box"><i style="font-size:18px;color:var(--tx3)">add</i></div>
+        </div>
+        <span style="font:500 13px Inter;color:var(--tx2)"><sc-for list="{{ mem.people }}" as="pp" hint-placeholder-count="2">{{ pp.n }} </sc-for></span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">LINKED TICKET</span>
+      <sc-if value="{{ memHasTk }}" hint-placeholder-val="{{ true }}">
+        <div onClick="{{ openMemTk }}" style="position:relative;display:flex;height:100px;border-radius:18px;color:#fff;cursor:pointer;background:{{ memTk.bg }};box-shadow:0 16px 36px -20px {{ memTk.glow }}">
+          <div style="flex:1;min-width:0;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:4px">
+            <div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;opacity:.8">{{ memTk.date }} · {{ memTk.time }}</div>
+            <div style="font:400 24px/1 Anton,Impact,sans-serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ memTk.artist }}</div>
+            <div style="font:500 12px Inter;opacity:.85">{{ memTk.venue }}</div>
+          </div>
+          <div style="border-left:2px dashed rgba(255,255,255,.4);margin:12px 0"></div>
+          <div style="position:absolute;right:85px;top:-11px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+          <div style="position:absolute;right:85px;bottom:-11px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+          <div style="width:94px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><i style="font-size:30px">qr_code_2</i><span style="font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.18em">VIEW</span></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ memNoTk }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ attachTk }}" style="display:flex;align-items:center;justify-content:center;gap:8px;height:64px;border-radius:18px;border:1.5px dashed var(--line2);color:var(--tx2);font:600 15px Inter;cursor:pointer"><i style="font-size:20px">add</i>Attach your ticket stub</div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.add }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:sticky;top:0;z-index:5;padding:54px 8px 8px;background:var(--hdr);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)">
+    <div style="display:grid;grid-template-columns:90px 1fr 90px;align-items:center;height:44px">
+      <sc-if value="{{ addPick }}" hint-placeholder-val="{{ true }}"><div onClick="{{ addCancel }}" style="padding:0 12px;font:500 16px Inter;color:var(--tx2);cursor:pointer">Cancel</div></sc-if>
+      <sc-if value="{{ addForm }}" hint-placeholder-val="{{ false }}"><div onClick="{{ addBack }}" style="padding:0 8px;display:flex;align-items:center;gap:2px;font:500 16px Inter;color:var(--tx2);cursor:pointer"><i style="font-size:20px">chevron_left</i>Photos</div></sc-if>
+      <div style="text-align:center;font:700 17px Inter">New memory</div>
+      <sc-if value="{{ addPick }}" hint-placeholder-val="{{ true }}"><div onClick="{{ addNext }}" style="padding:0 12px;text-align:right;font:700 16px Inter;color:var(--mag);cursor:pointer;opacity:{{ contOp }}">Next</div></sc-if>
+      <sc-if value="{{ addForm }}" hint-placeholder-val="{{ false }}"><div onClick="{{ saveMem }}" style="padding:0 12px;text-align:right;font:700 16px Inter;color:var(--mag);cursor:pointer">Save</div></sc-if>
+    </div>
+    <div style="display:flex;gap:6px;padding:8px 12px 0">
+      <div style="flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,#FF2E88,#FF8A2B)"></div>
+      <sc-if value="{{ addForm }}" hint-placeholder-val="{{ false }}"><div style="flex:1;height:3px;border-radius:2px;background:linear-gradient(90deg,#FF2E88,#FF8A2B)"></div></sc-if>
+      <sc-if value="{{ addPick }}" hint-placeholder-val="{{ true }}"><div style="flex:1;height:3px;border-radius:2px;background:var(--line2)"></div></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ addPick }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:14px 20px 16px">
+      <div style="font:800 26px/1.1 Inter;letter-spacing:-.025em">Start with the photos</div>
+      <div style="font:400 15px/1.45 Inter;color:var(--tx2);margin-top:6px">Pick shots from the night — we’ll read the date and place and fill in the rest.</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 20px 10px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">RECENTS · SAT 14 JUN 2025</span><span style="font:600 13px Inter;color:var(--mag)">Albums</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 0 140px">
+      <sc-for list="{{ addPhotos }}" as="p" hint-placeholder-count="12">
+        <div onClick="{{ p.toggle }}" style="position:relative;aspect-ratio:1;cursor:pointer;overflow:hidden;background:{{ p.ph }};box-shadow:{{ p.ring }}">
+          <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.2;mix-blend-mode:overlay"></div>
+          <sc-if value="{{ p.vid }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:6px;bottom:6px;font:600 11px Inter;color:#fff;display:flex;align-items:center;gap:2px"><i style="font-size:15px;font-variation-settings:'FILL' 1">videocam</i>{{ p.dur }}</div></sc-if>
+          <div style="position:absolute;top:7px;right:7px;width:24px;height:24px;border-radius:12px;border:2px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#fff;font:700 12px Inter;background:{{ p.bBg }}">{{ p.num }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="position:sticky;bottom:0;padding:20px 20px 36px;background:linear-gradient(180deg,transparent,var(--bg) 40%)">
+      <div onClick="{{ addNext }}" style="height:54px;border-radius:27px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 16px Inter;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(255,46,136,.75);opacity:{{ contOp }}">{{ contLabel }}<i style="font-size:20px">arrow_forward</i></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ addForm }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:14px 20px 50px;display:flex;flex-direction:column;gap:22px">
+      <div style="padding:1.5px;border-radius:20px;background:linear-gradient(110deg,#FF2E88,#FF8A2B);box-shadow:0 14px 34px -18px rgba(255,46,136,.8)">
+        <div style="border-radius:18.5px;background:var(--s1);padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+          <div style="width:36px;height:36px;flex:none;border-radius:18px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);color:#fff;display:flex;align-items:center;justify-content:center"><i style="font-size:19px;font-variation-settings:'FILL' 1">auto_awesome</i></div>
+          <div><div style="font:700 15px/1.3 Inter">We found date &amp; location from your photos</div><div style="font:400 13px/1.45 Inter;color:var(--tx2);margin-top:3px">{{ selCount }} photos taken Sat 14 Jun 2025, 20:41–22:58 near Greenwich, London.</div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px">
+        <sc-for list="{{ selStrip }}" as="p" hint-placeholder-count="4"><div style="flex:none;width:64px;height:64px;border-radius:12px;background:{{ p.ph }}"></div></sc-for>
+        <div onClick="{{ addBack }}" style="flex:none;width:64px;height:64px;border-radius:12px;border:1.5px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center;cursor:pointer"><i style="color:var(--tx3)">add_photo_alternate</i></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">ARTIST</span>
+        <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-radius:14px;background:var(--s1);border:1px solid var(--line)"><i style="color:var(--tx3)">mic_external_on</i><input value="{{ form.artist }}" onChange="{{ setArtist }}" placeholder="Who did you see?" style="flex:1;min-width:0;background:none;border:none;outline:none;font:500 16px Inter;color:var(--tx)"></div>
+        <sc-if value="{{ showSuggest }}" hint-placeholder-val="{{ true }}"><div onClick="{{ useSuggest }}" style="align-self:flex-start;display:flex;gap:6px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--s2);font:500 13px Inter;color:var(--tx2);cursor:pointer"><i style="font-size:16px;color:var(--vi);font-variation-settings:'FILL' 1">auto_awesome</i><span><b style="color:var(--tx);font-weight:600">Arctic Monkeys</b> played The O2 that night</span></div></sc-if>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">VENUE</span><span style="display:flex;align-items:center;gap:4px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--mag)"><i style="font-size:13px;font-variation-settings:'FILL' 1">auto_awesome</i>AUTO-FILLED</span></div>
+        <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,46,136,.45);background:var(--af)">
+          <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px"><i style="color:var(--mag);font-variation-settings:'FILL' 1">location_on</i><input value="{{ form.venue }}" onChange="{{ setVenue }}" style="flex:1;min-width:0;background:none;border:none;outline:none;font:500 16px Inter;color:var(--tx)"><i style="color:var(--tx3)">search</i></div>
+          <div style="position:relative;height:96px;background:var(--mapbg)">
+            <div style="position:absolute;left:58%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:8px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);border:2.5px solid #fff;box-sizing:border-box;box-shadow:0 0 18px 4px rgba(255,46,136,.5)"></div>
+            <div style="position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:10px;background:var(--s1);font:600 12px Inter"><i style="font-size:15px">map</i>Search on map</div>
+            <div style="position:absolute;left:12px;bottom:10px;font:500 11px Inter;color:var(--tx2)">Peninsula Square, SE10</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">DATE</span><span style="display:flex;align-items:center;gap:4px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--mag)"><i style="font-size:13px;font-variation-settings:'FILL' 1">auto_awesome</i>AUTO-FILLED</span></div>
+        <div style="display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-radius:14px;border:1px solid rgba(255,46,136,.45);background:var(--af)"><i style="color:var(--mag)">calendar_today</i><input value="{{ form.date }}" onChange="{{ setDate }}" style="flex:1;min-width:0;background:none;border:none;outline:none;font:500 16px Inter;color:var(--tx)"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">RATING</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px 6px 4px;border-radius:14px;background:var(--s1);border:1px solid var(--line)">
+          <div style="display:flex"><sc-for list="{{ formStars }}" as="st" hint-placeholder-count="5"><div onClick="{{ st.set }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer"><i style="font-size:32px;font-variation-settings:'FILL' 1;color:{{ st.c }}">star</i></div></sc-for></div>
+          <span style="font:600 13px Inter;color:var(--tx2);padding-right:6px">{{ rateLabel }}</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">NOTES</span>
+        <textarea value="{{ form.notes }}" onChange="{{ setNotes }}" placeholder="The moment you’ll want to remember…" rows="4" style="resize:none;padding:14px;border-radius:14px;background:var(--s1);border:1px solid var(--line);outline:none;font:400 16px/1.5 Inter;color:var(--tx)"></textarea>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">WENT WITH</span>
+        <div style="display:flex;gap:16px">
+          <sc-for list="{{ formPeople }}" as="pp" hint-placeholder-count="3">
+            <div onClick="{{ pp.toggle }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;opacity:{{ pp.op }}"><div style="width:52px;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 15px Inter;background:{{ pp.bg }};box-shadow:{{ pp.ring }}">{{ pp.i }}</div><span style="font:500 12px Inter;color:var(--tx2)">{{ pp.n }}</span></div>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:52px;height:52px;border-radius:26px;border:1.5px dashed var(--line2);box-sizing:border-box;display:flex;align-items:center;justify-content:center"><i style="color:var(--tx3)">person_add</i></div><span style="font:500 12px Inter;color:var(--tx3)">Add</span></div>
+        </div>
+      </div>
+
+      <div onClick="{{ saveMem }}" style="height:54px;border-radius:27px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 16px Inter;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(255,46,136,.75)">Save memory</div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.upcoming }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:sticky;top:0;z-index:5;padding:54px 0 10px;background:var(--hdr);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 4px">
+      <div style="font:800 34px/1 Inter;letter-spacing:-.035em">Upcoming</div>
+      <div style="display:flex;gap:8px">
+        <div style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><i>calendar_month</i></div>
+        <div onClick="{{ planNew }}" style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer"><i>add</i></div>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{ upHas }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:12px">
+    <div onClick="{{ openNext }}" style="position:relative;height:430px;border-radius:24px;overflow:hidden;cursor:pointer;background:{{ next.ph }};box-shadow:0 26px 60px -26px rgba(255,46,136,.7)">
+      <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.24;mix-blend-mode:overlay"></div>
+      <div style="position:absolute;top:62px;left:20px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.4)">ARTIST PHOTO</div>
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 25%,rgba(8,8,12,.9) 100%)"></div>
+      <div style="position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:rgba(10,10,14,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.18em"><span style="width:6px;height:6px;border-radius:3px;background:#FF2E88;box-shadow:0 0 8px #FF2E88"></span>NEXT UP</div>
+        <div style="display:flex;align-items:center;gap:4px;height:28px;padding:0 10px;border-radius:14px;background:rgba(10,30,20,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#6BF0B4;font:600 12px Inter"><i style="font-size:15px;font-variation-settings:'FILL' 1">check_circle</i>Ticket saved</div>
+      </div>
+      <div style="position:absolute;left:20px;right:20px;bottom:20px;color:#fff">
+        <div style="display:flex;align-items:flex-end;gap:10px">
+          <span style="font:400 136px/.78 Anton,Impact,sans-serif;background:linear-gradient(170deg,#FFD0E4 0%,#FF2E88 45%,#FF8A2B 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 24px rgba(255,46,136,.55))">{{ next.days }}</span>
+          <div style="padding-bottom:4px"><div style="font:400 36px/.9 Anton,Impact,sans-serif">DAYS</div><div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.2em;opacity:.75;margin-top:4px">TO GO</div></div>
+        </div>
+        <div style="font:400 42px/.95 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:16px">{{ next.artist }}</div>
+        <div style="display:flex;align-items:center;gap:4px;font:500 14px Inter;opacity:.88;margin-top:6px"><i style="font-size:17px;color:#FF7AB0;font-variation-settings:'FILL' 1">location_on</i>{{ next.venue }} · {{ next.city }}</div>
+        <div style="display:flex;gap:6px;margin-top:14px">
+          <div style="padding:5px 8px;border:1px dashed rgba(255,255,255,.5);border-radius:5px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em">{{ next.dow }} {{ next.day }} {{ next.mon }}</div>
+          <div style="padding:5px 8px;border:1px dashed rgba(255,255,255,.5);border-radius:5px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em">DOORS {{ next.doors }}</div>
+          <div style="padding:5px 8px;border:1px dashed rgba(255,255,255,.5);border-radius:5px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em">SHOW {{ next.show }}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 4px 2px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">LATER</span><span style="font:500 12px Inter;color:var(--tx3)">4 shows</span></div>
+    <sc-for list="{{ upRows }}" as="e" hint-placeholder-count="4">
+      <div onClick="{{ e.open }}" style="display:flex;align-items:center;gap:14px;padding:12px;border-radius:20px;background:var(--s1);border:1px solid var(--line);cursor:pointer">
+        <div style="flex:none;width:58px;height:68px;border-radius:14px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+          <span style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--mag)">{{ e.mon }}</span>
+          <span style="font:400 30px/1 Anton,Impact,sans-serif">{{ e.day }}</span>
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+          <div style="font:400 22px/1 Anton,Impact,sans-serif;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.artist }}</div>
+          <div style="font:400 13px Inter;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.venue }} · {{ e.city }}</div>
+          <div style="align-self:flex-start;display:flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;font:600 11px Inter;background:{{ e.bBg }};color:{{ e.bC }}"><i style="font-size:14px;font-variation-settings:'FILL' 1">{{ e.bI }}</i>{{ e.badge }}</div>
+        </div>
+        <i style="color:var(--tx3)">chevron_right</i>
+      </div>
+    </sc-for>
+  </div>
+  </sc-if>
+  <sc-if value="{{ upIsEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:70px 32px 120px;display:flex;flex-direction:column;align-items:center;text-align:center">
+      <div style="position:relative;width:240px;height:180px">
+        <div style="position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,46,136,.28),transparent 65%)"></div>
+        <div style="position:absolute;left:22px;top:34px;width:180px;height:104px;border-radius:16px;border:1.5px dashed var(--line2);background:var(--s1);transform:rotate(-9deg)"></div>
+        <div style="position:absolute;left:36px;top:40px;width:180px;height:104px;border-radius:16px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);transform:rotate(5deg);box-shadow:0 20px 40px -14px rgba(255,46,136,.7);overflow:hidden">
+          <div style="position:absolute;left:126px;top:10px;bottom:10px;border-left:2px dashed rgba(255,255,255,.5)"></div>
+          <div style="position:absolute;left:115px;top:-11px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+          <div style="position:absolute;left:115px;bottom:-11px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+          <div style="position:absolute;left:16px;top:20px;font:400 30px/1 Anton,Impact,sans-serif;color:#fff">??/??</div>
+          <div style="position:absolute;left:16px;top:58px;font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.85)">YOUR NEXT SHOW</div>
+          <div style="position:absolute;left:142px;top:38px;width:24px;height:24px;border-radius:12px;border:2px solid rgba(255,255,255,.8);box-sizing:border-box"></div>
+        </div>
+      </div>
+      <div style="font:800 24px/1.15 Inter;letter-spacing:-.02em;margin-top:26px">No shows on the horizon</div>
+      <div style="font:400 15px/1.5 Inter;color:var(--tx2);margin-top:8px;text-wrap:pretty">Plan a concert and we’ll count down the days, keep your ticket handy and remind you before doors.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;width:100%;margin-top:26px">
+        <div onClick="{{ planNew }}" style="height:54px;border-radius:27px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 16px Inter;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 12px 30px -10px rgba(255,46,136,.75)"><i style="font-size:20px">event_upcoming</i>Plan a concert</div>
+        <div onClick="{{ importTk }}" style="height:54px;border-radius:27px;background:var(--s1);border:1px solid var(--line);font:600 16px Inter;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">Import a ticket instead</div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.event }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:relative;height:400px;background:{{ ev.ph }}">
+    <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.24;mix-blend-mode:overlay"></div>
+    <div style="position:absolute;top:116px;left:20px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.4)">ARTIST PHOTO</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,8,12,.5) 0%,transparent 24%,transparent 40%,rgba(8,8,12,.9) 100%)"></div>
+    <div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between">
+      <div onClick="{{ backEv }}" style="width:44px;height:44px;border-radius:22px;background:rgba(20,18,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer"><i style="font-size:20px">arrow_back_ios_new</i></div>
+      <div style="width:44px;height:44px;border-radius:22px;background:rgba(20,18,26,.42);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;display:flex;align-items:center;justify-content:center"><i style="font-size:20px">ios_share</i></div>
+    </div>
+    <div style="position:absolute;left:20px;right:20px;bottom:46px;color:#fff">
+      <sc-if value="{{ notPast }}" hint-placeholder-val="{{ true }}"><div style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:linear-gradient(110deg,#FF2E88,#FF8A2B);font:700 12px Inter">In {{ ev.days }} days</div></sc-if>
+      <div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;opacity:.85;margin-top:12px">{{ ev.tour }}</div>
+      <div style="font:400 62px/.9 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:6px">{{ ev.artist }}</div>
+    </div>
+  </div>
+  <div style="position:relative;margin-top:-26px;border-radius:28px 28px 0 0;background:var(--bg);padding:22px 20px 60px;display:flex;flex-direction:column;gap:22px">
+    <sc-if value="{{ isPast }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ toMemory }}" style="position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;cursor:pointer;box-shadow:0 16px 36px -16px rgba(255,46,136,.8)">
+        <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.25;mix-blend-mode:overlay"></div>
+        <div style="width:44px;height:44px;flex:none;border-radius:22px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center"><i style="font-variation-settings:'FILL' 1">auto_awesome</i></div>
+        <div style="flex:1"><div style="font:800 18px Inter">How was it?</div><div style="font:500 14px Inter;opacity:.92;margin-top:2px">Turn it into a memory →</div></div>
+      </div>
+    </sc-if>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px">
+      <div style="padding:12px;border-radius:16px;background:var(--s1);border:1px solid var(--line)"><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">{{ ev.dow }}</div><div style="font:400 24px/1.1 Anton,Impact,sans-serif;margin-top:6px">{{ ev.day }} {{ ev.mon }}</div><div style="font:500 11px Inter;color:var(--tx3)">{{ ev.yr }}</div></div>
+      <div style="padding:12px;border-radius:16px;background:var(--s1);border:1px solid var(--line)"><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">DOORS</div><div style="font:400 24px/1.1 Anton,Impact,sans-serif;margin-top:6px">{{ ev.doors }}</div></div>
+      <div style="padding:12px;border-radius:16px;background:var(--s1);border:1px solid var(--line)"><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">SHOW</div><div style="font:400 24px/1.1 Anton,Impact,sans-serif;margin-top:6px;color:var(--mag)">{{ ev.show }}</div></div>
+    </div>
+    <div style="border-radius:20px;overflow:hidden;background:var(--s1);border:1px solid var(--line)">
+      <div style="position:relative;height:150px;background:var(--mapbg)">
+        <div style="position:absolute;left:46%;top:52%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:35px;background:radial-gradient(circle,rgba(255,46,136,.4),transparent 70%)"></div>
+        <div style="position:absolute;left:46%;top:52%;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:10px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(255,46,136,.7)"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px">
+        <div style="flex:1;min-width:0"><div style="font:600 15px Inter">{{ ev.venue }}</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">{{ ev.addr }}</div></div>
+        <div onClick="{{ directions }}" style="flex:none;display:flex;align-items:center;gap:6px;height:44px;padding:0 16px;border-radius:22px;background:linear-gradient(110deg,#FF2E88,#FF8A2B);color:#fff;font:700 14px Inter;cursor:pointer"><i style="font-size:18px;font-variation-settings:'FILL' 1">directions</i>Directions</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;background:var(--s1);border:1px solid var(--line)">
+      <div style="width:40px;height:40px;flex:none;border-radius:12px;background:rgba(123,97,255,.18);color:var(--vi);display:flex;align-items:center;justify-content:center"><i style="font-variation-settings:'FILL' 1">notifications</i></div>
+      <div style="flex:1"><div style="font:600 15px Inter">Remind me</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">Day before + 2 h before doors</div></div>
+      <div onClick="{{ remind.flip }}" style="position:relative;width:51px;height:31px;flex:none;border-radius:16px;cursor:pointer;transition:background .25s;background:{{ remind.bg }}"><div style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.2,.8,.2,1);transform:translateX({{ remind.x }})"></div></div>
+    </div>
+    <sc-if value="{{ evHasTk }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ openEvTk }}" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;background:var(--s1);border:1px solid var(--line);cursor:pointer">
+        <div style="width:40px;height:40px;flex:none;border-radius:12px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);color:#fff;display:flex;align-items:center;justify-content:center"><i style="font-variation-settings:'FILL' 1">confirmation_number</i></div>
+        <div style="flex:1;min-width:0"><div style="font:600 15px Inter">View ticket</div><div style="font:500 12px 'IBM Plex Mono',monospace;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ev.seat }}</div></div>
+        <i style="color:var(--tx3)">chevron_right</i>
+      </div>
+    </sc-if>
+    <sc-if value="{{ evNoTk }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ importTk }}" style="display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border-radius:20px;border:1.5px dashed var(--line2);color:var(--tx2);font:600 15px Inter;cursor:pointer"><i style="font-size:20px">add</i>Link a ticket</div>
+    </sc-if>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">NOTES</span><span style="font:600 14px Inter;color:var(--mag)">Edit</span></div>
+      <div style="padding:16px;border-radius:20px;background:var(--s1);border:1px solid var(--line);font:400 15px/1.55 Inter;text-wrap:pretty">{{ ev.notes }}</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.tickets }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:sticky;top:0;z-index:5;padding:54px 0 12px;background:var(--hdr);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 12px">
+      <div style="font:800 34px/1 Inter;letter-spacing:-.035em">Tickets</div>
+      <div onClick="{{ openTkSheet }}" style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-sizing:border-box;cursor:pointer"><i>add</i></div>
+    </div>
+    <div style="position:relative;display:flex;height:40px;margin:0 20px;padding:3px;border-radius:12px;background:var(--s1);border:1px solid var(--line);box-sizing:border-box">
+      <div style="position:absolute;top:3px;bottom:3px;width:calc(50% - 3px);border-radius:9px;background:var(--seg);box-shadow:0 2px 8px rgba(0,0,0,.2);transition:left .3s cubic-bezier(.2,.8,.2,1);left:{{ segLeft }}"></div>
+      <div onClick="{{ segUp }}" style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;font:600 14px Inter;cursor:pointer;color:{{ segUpC }}">Upcoming · 3</div>
+      <div onClick="{{ segPast }}" style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;font:600 14px Inter;cursor:pointer;color:{{ segPastC }}">Past · 3</div>
+    </div>
+  </div>
+  <div style="padding:14px 20px 130px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3);padding-bottom:16px"><i style="font-size:14px">lock</i>FACE ID PROTECTED</div>
+    <sc-for list="{{ tks }}" as="t" hint-placeholder-count="3">
+      <div onClick="{{ t.tap }}" style="position:relative;height:214px;border-radius:22px;color:#fff;cursor:pointer;transition:margin-top .45s cubic-bezier(.2,.8,.2,1);background:{{ t.bg }};margin-top:{{ t.mt }};box-shadow:0 -8px 24px -12px rgba(0,0,0,.55),0 22px 44px -26px {{ t.glow }}">
+        <div style="position:absolute;inset:0;border-radius:22px;background-image:var(--grain);opacity:.22;mix-blend-mode:overlay;pointer-events:none"></div>
+        <div style="padding:16px 18px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="min-width:0">
+            <div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;opacity:.8">{{ t.date }} · {{ t.time }}</div>
+            <div style="font:400 30px/1 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.artist }}</div>
+          </div>
+          <div style="flex:none;display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:8px;background:rgba(0,0,0,.25);font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.1em"><i style="font-size:14px">{{ t.fi }}</i>{{ t.ft }}</div>
+        </div>
+        <div style="padding:8px 18px 0;font:500 13px Inter;opacity:.88;display:flex;align-items:center;gap:4px"><i style="font-size:15px;font-variation-settings:'FILL' 1">location_on</i>{{ t.venue }} · {{ t.city }}</div>
+        <div style="position:absolute;left:18px;right:18px;top:132px;border-top:2px dashed rgba(255,255,255,.35)"></div>
+        <div style="position:absolute;left:-11px;top:122px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+        <div style="position:absolute;right:-11px;top:122px;width:22px;height:22px;border-radius:11px;background:var(--bg)"></div>
+        <div style="position:absolute;left:18px;right:18px;bottom:16px;display:grid;grid-template-columns:repeat(3,1fr) 36px;gap:8px;align-items:end">
+          <sc-for list="{{ t.seatL }}" as="f" hint-placeholder-count="3"><div><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;opacity:.7">{{ f.k }}</div><div style="font:700 18px Inter;margin-top:3px">{{ f.v }}</div></div></sc-for>
+          <i style="font-size:30px;opacity:.9">qr_code_2</i>
+        </div>
+      </div>
+    </sc-for>
+    <div style="text-align:center;font:500 12px Inter;color:var(--tx3);padding-top:18px">Tap a ticket to fan it out · tap again to open</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.ticket }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="padding:54px 8px 0;display:flex;justify-content:space-between;align-items:center;height:44px">
+    <div onClick="{{ backTk }}" style="display:flex;align-items:center;gap:2px;height:44px;padding:0 8px;font:500 16px Inter;color:var(--mag);cursor:pointer"><i style="font-size:22px">chevron_left</i>Back</div>
+    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><i>more_horiz</i></div>
+  </div>
+  <div style="display:flex;justify-content:center;padding-top:6px"><div style="display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:15px;background:rgba(255,179,71,.14);color:#F2A33A;font:600 12px Inter;box-shadow:0 0 24px -4px rgba(255,179,71,.45)"><i style="font-size:16px;font-variation-settings:'FILL' 1">light_mode</i>Brightness boosted</div></div>
+  <div style="margin:14px 20px 0;border-radius:26px;box-shadow:0 30px 60px -30px {{ tk.glow }}">
+    <div style="position:relative;padding:20px 20px 26px;border-radius:26px 26px 0 0;color:#fff;overflow:hidden;background:{{ tk.bg }}">
+      <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.22;mix-blend-mode:overlay"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;opacity:.85">ADMIT ONE</span><div style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.25);font:600 10px 'IBM Plex Mono',monospace"><i style="font-size:14px">{{ tk.fi }}</i>{{ tk.ft }}</div></div>
+      <div style="font:400 46px/.92 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:12px">{{ tk.artist }}</div>
+      <div style="font:500 13px Inter;opacity:.88;margin-top:4px">{{ tk.tour }}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;opacity:.7">DATE</div><div style="font:700 14px Inter;margin-top:3px">{{ tk.date }}</div></div>
+        <div><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;opacity:.7">VENUE</div><div style="font:700 14px Inter;margin-top:3px">{{ tk.venue }}</div></div>
+      </div>
+    </div>
+    <div style="position:relative;height:0">
+      <div style="position:absolute;left:-12px;top:-12px;width:24px;height:24px;border-radius:12px;background:var(--bg);z-index:2"></div>
+      <div style="position:absolute;right:-12px;top:-12px;width:24px;height:24px;border-radius:12px;background:var(--bg);z-index:2"></div>
+      <div style="position:absolute;left:18px;right:18px;top:-1px;border-top:2px dashed rgba(22,19,26,.25);z-index:2"></div>
+    </div>
+    <div style="padding:22px 20px 20px;border-radius:0 0 26px 26px;background:#F7F4EE;color:#16131A">
+      <sc-if value="{{ page0 }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div style="padding:12px;border-radius:14px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.06)"><div style="display:grid;grid-template-columns:repeat(25,1fr);width:190px;height:190px"><sc-for list="{{ qr }}" as="c" hint-placeholder-count="25"><div style="background:{{ c }}"></div></sc-for></div></div>
+          <div style="font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(22,19,26,.6)">{{ tk.code }}</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ page1 }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0">
+          <div style="font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(22,19,26,.5)">GUEST TICKET · SEAT 13</div>
+          <div style="width:100%;height:110px;border-radius:8px;background:repeating-linear-gradient(90deg,#141218 0 2px,transparent 2px 4px,#141218 4px 7px,transparent 7px 8px,#141218 8px 9px,transparent 9px 13px,#141218 13px 16px,transparent 16px 18px)"></div>
+          <div style="font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(22,19,26,.6)">ENC 7F3K 2291 0105</div>
+        </div>
+      </sc-if>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(22,19,26,.1)">
+        <sc-for list="{{ tk.seatL }}" as="f" hint-placeholder-count="3"><div style="text-align:center"><div style="font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(22,19,26,.5)">{{ f.k }}</div><div style="font:400 26px/1.1 Anton,Impact,sans-serif;margin-top:4px">{{ f.v }}</div></div></sc-for>
+      </div>
+    </div>
+  </div>
+  <sc-if value="{{ tk.multi }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding-top:14px">
+      <div onClick="{{ prevPage }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx2)"><i>chevron_left</i></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="display:flex;gap:5px"><sc-for list="{{ tk.dots }}" as="d" hint-placeholder-count="2"><div style="height:6px;border-radius:3px;transition:width .25s;width:{{ d.w }};background:{{ d.bg }}"></div></sc-for></div><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3)">{{ tk.pageLabel }}</span></div>
+      <div onClick="{{ nextPage }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx2)"><i>chevron_right</i></div>
+    </div>
+  </sc-if>
+  <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px;padding:16px 20px 0">
+    <div onClick="{{ share }}" style="height:52px;border-radius:26px;background:var(--s1);border:1px solid var(--line);font:600 15px Inter;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer"><i style="font-size:19px">ios_share</i>Share</div>
+    <div onClick="{{ linkEv }}" style="height:52px;border-radius:26px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 15px Inter;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 12px 30px -12px rgba(255,46,136,.75)"><i style="font-size:19px">link</i>Link to event</div>
+  </div>
+  <div style="text-align:center;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--tx3);padding:16px 20px 50px;text-transform:uppercase">{{ tk.file }}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.scan }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:#000;overflow:hidden;animation:enc-fade .3s ease;color:#fff">
+  <div style="position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 45%,#4a3626 0%,#21180f 55%,#0a0806 100%),repeating-linear-gradient(8deg,rgba(255,255,255,.025) 0 3px,transparent 3px 11px);background-blend-mode:overlay"></div>
+  <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.3;mix-blend-mode:overlay"></div>
+  <div style="position:absolute;top:110px;left:20px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.35)">CAMERA FEED</div>
+  <div style="position:absolute;top:54px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center">
+    <div onClick="{{ closeScan }}" style="width:44px;height:44px;border-radius:22px;background:rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;cursor:pointer"><i>close</i></div>
+    <div style="font:700 17px Inter">Scan ticket</div>
+    <div style="width:44px;height:44px;border-radius:22px;background:rgba(255,255,255,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center"><i>flash_auto</i></div>
+  </div>
+  <div style="position:absolute;top:126px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:16px;background:rgba(10,10,14,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:600 13px Inter;white-space:nowrap"><span style="width:7px;height:7px;border-radius:4px;background:#3DDC97;box-shadow:0 0 8px #3DDC97"></span>Ticket detected · hold steady</div>
+  <div style="position:absolute;left:72px;top:196px;width:250px;height:370px;transform:perspective(900px) rotateX(10deg) rotate(-5deg)">
+    <div style="position:absolute;inset:0;border-radius:6px;background:linear-gradient(170deg,#efe5d3,#cfc0a6);box-shadow:0 30px 50px rgba(0,0,0,.6)">
+      <div style="position:absolute;left:18px;top:20px;font:400 34px/1 Anton,Impact,sans-serif;color:rgba(40,30,20,.55)">PAPER</div>
+      <div style="position:absolute;left:18px;top:58px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(40,30,20,.5)">TICKET PLACEHOLDER</div>
+      <div style="position:absolute;left:18px;right:18px;top:250px;border-top:2px dashed rgba(40,30,20,.3)"></div>
+      <div style="position:absolute;left:18px;right:18px;bottom:20px;height:60px;background:repeating-linear-gradient(90deg,rgba(40,30,20,.55) 0 2px,transparent 2px 5px,rgba(40,30,20,.55) 5px 6px,transparent 6px 9px)"></div>
+    </div>
+    <div style="position:absolute;inset:-4px;border-radius:8px;border:2.5px solid #FF2E88;background:rgba(255,46,136,.1);box-shadow:0 0 30px 4px rgba(255,46,136,.55),inset 0 0 30px rgba(255,46,136,.25)"></div>
+    <div style="position:absolute;left:-4px;right:-4px;height:2px;background:linear-gradient(90deg,transparent,#FF8A2B,transparent);box-shadow:0 0 14px 2px rgba(255,138,43,.8);animation:enc-scan 1.8s ease-in-out infinite alternate"></div>
+    <div style="position:absolute;left:-11px;top:-11px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #FF2E88"></div>
+    <div style="position:absolute;right:-11px;top:-11px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #FF2E88"></div>
+    <div style="position:absolute;left:-11px;bottom:-11px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #FF2E88"></div>
+    <div style="position:absolute;right:-11px;bottom:-11px;width:14px;height:14px;border-radius:7px;background:#fff;border:3px solid #FF2E88"></div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:210px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.85) 35%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:18px;padding-bottom:44px;box-sizing:border-box">
+    <div style="display:flex;gap:22px;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.18em"><span style="color:#FF8A2B">AUTO</span><span style="color:rgba(255,255,255,.55)">MANUAL</span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 40px;box-sizing:border-box">
+      <div style="width:48px;height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.6);background:linear-gradient(170deg,#efe5d3,#cfc0a6);box-sizing:border-box"></div>
+      <div onClick="{{ shutter }}" style="width:78px;height:78px;border-radius:39px;border:4px solid #fff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:62px;height:62px;border-radius:31px;background:#fff"></div></div>
+      <div style="width:48px;height:48px;border-radius:24px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center"><i>photo_library</i></div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.review }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:#0B0B0F;color:#fff;animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="position:absolute;top:54px;left:8px;right:8px;display:grid;grid-template-columns:90px 1fr 90px;align-items:center;height:44px">
+    <div onClick="{{ retake }}" style="padding:0 12px;font:500 16px Inter;color:rgba(255,255,255,.7);cursor:pointer">Retake</div>
+    <div style="text-align:center;font:700 17px Inter">Crop &amp; enhance</div>
+    <div onClick="{{ useScan }}" style="padding:0 12px;text-align:right;font:700 16px Inter;color:#FF4F9A;cursor:pointer">Next</div>
+  </div>
+  <div style="position:absolute;top:120px;left:0;right:0;height:450px;display:flex;align-items:center;justify-content:center">
+    <div style="position:relative;width:250px;height:390px">
+      <div style="position:absolute;inset:0;transition:background .3s,filter .3s;background:{{ paperC }};filter:{{ paperF }}">
+        <div style="position:absolute;left:18px;top:20px;font:400 34px/1 Anton,Impact,sans-serif;color:#2a1f16">TAME IMPALA</div>
+        <div style="position:absolute;left:18px;top:60px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#4a3a2c">SUN 01 NOV 2026 · MSG · NEW YORK</div>
+        <div style="position:absolute;left:18px;top:96px;display:flex;gap:18px;font:600 10px 'IBM Plex Mono',monospace;color:#4a3a2c"><span>SEC 104</span><span>ROW F</span><span>SEAT 12</span></div>
+        <div style="position:absolute;left:18px;right:18px;top:262px;border-top:2px dashed rgba(42,31,22,.35)"></div>
+        <div style="position:absolute;left:18px;right:18px;bottom:22px;height:64px;background:repeating-linear-gradient(90deg,#2a1f16 0 2px,transparent 2px 5px,#2a1f16 5px 6px,transparent 6px 9px)"></div>
+      </div>
+      <div style="position:absolute;inset:0;border:1.5px solid rgba(255,255,255,.9);background:linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)) 33.3% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)) 66.6% 0/1px 100% no-repeat,linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)) 0 33.3%/100% 1px no-repeat,linear-gradient(rgba(255,255,255,.18),rgba(255,255,255,.18)) 0 66.6%/100% 1px no-repeat"></div>
+      <div style="position:absolute;left:-4px;top:-4px;width:24px;height:24px;border-left:4px solid #fff;border-top:4px solid #fff"></div>
+      <div style="position:absolute;right:-4px;top:-4px;width:24px;height:24px;border-right:4px solid #fff;border-top:4px solid #fff"></div>
+      <div style="position:absolute;left:-4px;bottom:-4px;width:24px;height:24px;border-left:4px solid #fff;border-bottom:4px solid #fff"></div>
+      <div style="position:absolute;right:-4px;bottom:-4px;width:24px;height:24px;border-right:4px solid #fff;border-bottom:4px solid #fff"></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:0 20px 40px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;justify-content:center;gap:28px;color:rgba(255,255,255,.8)"><i>rotate_right</i><i>crop</i><i>auto_fix_high</i></div>
+    <div style="display:flex;justify-content:center;gap:14px">
+      <sc-for list="{{ filters }}" as="fl" hint-placeholder-count="3">
+        <div onClick="{{ fl.pick }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer"><div style="width:56px;height:72px;border-radius:10px;background:{{ fl.c }};filter:{{ fl.fl }};box-shadow:{{ fl.ring }}"></div><span style="font:600 12px Inter;color:{{ fl.lc }}">{{ fl.label }}</span></div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
+      <div onClick="{{ retake }}" style="height:52px;border-radius:26px;background:rgba(255,255,255,.1);font:600 15px Inter;display:flex;align-items:center;justify-content:center;cursor:pointer">Retake</div>
+      <div onClick="{{ useScan }}" style="height:52px;border-radius:26px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);font:700 15px Inter;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 12px 30px -12px rgba(255,46,136,.75)">Use scan</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.assign }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="padding:54px 8px 0;display:grid;grid-template-columns:90px 1fr 90px;align-items:center">
+    <div onClick="{{ assignBack }}" style="display:flex;align-items:center;height:44px;padding:0 4px;color:var(--mag);font:500 16px Inter;cursor:pointer"><i>chevron_left</i>Back</div>
+    <div style="text-align:center;font:700 17px Inter">Assign ticket</div>
+    <div></div>
+  </div>
+  <div style="padding:14px 20px 140px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;gap:14px;align-items:center;padding:14px;border-radius:20px;background:var(--s1);border:1px solid var(--line)">
+      <div style="width:56px;height:80px;flex:none;border-radius:6px;background:linear-gradient(170deg,#f6f0e4,#e5d9c4);transform:rotate(-4deg);box-shadow:0 6px 16px rgba(0,0,0,.25)"></div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:4px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--mag)"><i style="font-size:13px;font-variation-settings:'FILL' 1">auto_awesome</i>WE READ</div>
+        <div style="font:400 24px/1 Anton,Impact,sans-serif;margin-top:6px">TAME IMPALA</div>
+        <div style="font:500 12px 'IBM Plex Mono',monospace;color:var(--tx2);margin-top:4px">01 NOV 2026 · SEC 104 · ROW F</div>
+      </div>
+    </div>
+    <div style="font:800 22px/1.2 Inter;letter-spacing:-.02em">Which concert is this for?</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <sc-for list="{{ assign }}" as="a" hint-placeholder-count="5">
+        <div onClick="{{ a.pick }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:18px;background:var(--s1);cursor:pointer;border:{{ a.bd }}">
+          <div style="flex:none;width:46px;height:52px;border-radius:12px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--mag)">{{ a.mon }}</span><span style="font:400 22px/1 Anton,Impact,sans-serif">{{ a.day }}</span></div>
+          <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font:400 19px/1 Anton,Impact,sans-serif;text-transform:uppercase">{{ a.artist }}</span><sc-if value="{{ a.sug }}" hint-placeholder-val="{{ false }}"><span style="padding:2px 6px;border-radius:6px;background:var(--af);color:var(--mag);font:700 10px Inter">Match</span></sc-if></div><div style="font:400 13px Inter;color:var(--tx2);margin-top:4px">{{ a.venue }}</div></div>
+          <div style="width:24px;height:24px;flex:none;border-radius:12px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#fff;background:{{ a.rBg }};border:1.5px solid {{ a.rB }}"><i style="font-size:16px;font-variation-settings:'wght' 700;opacity:{{ a.rI }}">check</i></div>
+        </div>
+      </sc-for>
+      <div onClick="{{ newEvent }}" style="display:flex;align-items:center;gap:12px;height:60px;padding:0 14px;border-radius:18px;border:1.5px dashed var(--line2);color:var(--tx2);font:600 15px Inter;cursor:pointer"><i>add_circle</i>Create a new event</div>
+    </div>
+  </div>
+  <div style="position:sticky;bottom:0;padding:20px 20px 38px;background:linear-gradient(180deg,transparent,var(--bg) 40%)">
+    <div onClick="{{ saveTk }}" style="height:54px;border-radius:27px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 16px Inter;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 12px 30px -10px rgba(255,46,136,.75)">Save ticket</div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.profile }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);animation:enc-in .3s cubic-bezier(.2,.8,.2,1)">
+  <div style="padding:60px 20px 120px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:68px;height:68px;border-radius:34px;padding:3px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);box-sizing:border-box"><div style="width:100%;height:100%;border-radius:31px;background:var(--s2);border:2px solid var(--bg);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:400 24px Anton,Impact,sans-serif">MO</div></div>
+      <div style="flex:1"><div style="font:800 24px/1.1 Inter;letter-spacing:-.02em">Maya Okafor</div><div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:var(--tx3);margin-top:5px">GIG-GOER SINCE 2016</div></div>
+      <div style="width:44px;height:44px;border-radius:22px;background:var(--s1);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;box-sizing:border-box"><i>settings</i></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="padding:14px;border-radius:20px;background:var(--s1);border:1px solid var(--line)"><div style="font:400 40px/1 Anton,Impact,sans-serif;background:linear-gradient(170deg,#FF2E88,#FF8A2B);-webkit-background-clip:text;background-clip:text;color:transparent">87</div><div style="font:500 13px Inter;color:var(--tx2);margin-top:6px">Concerts</div></div>
+      <div style="padding:14px;border-radius:20px;background:var(--s1);border:1px solid var(--line)"><div style="font:400 40px/1 Anton,Impact,sans-serif">54</div><div style="font:500 13px Inter;color:var(--tx2);margin-top:6px">Artists</div></div>
+      <div style="padding:14px;border-radius:20px;background:var(--s1);border:1px solid var(--line)"><div style="font:400 40px/1 Anton,Impact,sans-serif">23</div><div style="font:500 13px Inter;color:var(--tx2);margin-top:6px">Cities</div></div>
+    </div>
+    <div style="position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:linear-gradient(110deg,#2a0f1c,#1a1a22 70%);border:1px solid var(--line);color:#fff">
+      <div style="width:60px;height:60px;flex:none;border-radius:16px;background:radial-gradient(70% 60% at 30% 25%,#FF2E88,transparent 65%),radial-gradient(60% 50% at 80% 40%,#FF7A2F,transparent 60%),#160c12"></div>
+      <div style="flex:1;min-width:0"><div style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(255,255,255,.6)">MOST SEEN</div><div style="font:400 26px/1 Anton,Impact,sans-serif;margin-top:5px">ARCTIC MONKEYS</div></div>
+      <div style="text-align:right"><div style="font:400 34px/1 Anton,Impact,sans-serif;color:#FF8A2B">×6</div><div style="font:500 11px Inter;color:rgba(255,255,255,.6)">since 2014</div></div>
+    </div>
+    <div style="border-radius:20px;overflow:hidden;background:#0B0B12;border:1px solid var(--line);color:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px 0"><span style="font:700 16px Inter">Your venue map</span><span style="font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(255,255,255,.5)">23 CITIES · 9 COUNTRIES</span></div>
+      <div style="position:relative;height:190px;margin-top:8px">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.22) 1.1px,transparent 1.6px) 0 0/8px 8px;-webkit-mask-image:radial-gradient(ellipse 14% 17% at 21% 26%,#000 70%,transparent 100%),radial-gradient(ellipse 6% 9% at 24% 42%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 17% at 32% 68%,#000 65%,transparent 100%),radial-gradient(ellipse 4% 6% at 38% 7%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 9% at 53% 21%,#000 65%,transparent 100%),radial-gradient(ellipse 8% 18% at 55% 55%,#000 65%,transparent 100%),radial-gradient(ellipse 17% 16% at 75% 24%,#000 70%,transparent 100%),radial-gradient(ellipse 6% 9% at 76% 45%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 8% at 88% 76%,#000 65%,transparent 100%);mask-image:radial-gradient(ellipse 14% 17% at 21% 26%,#000 70%,transparent 100%),radial-gradient(ellipse 6% 9% at 24% 42%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 17% at 32% 68%,#000 65%,transparent 100%),radial-gradient(ellipse 4% 6% at 38% 7%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 9% at 53% 21%,#000 65%,transparent 100%),radial-gradient(ellipse 8% 18% at 55% 55%,#000 65%,transparent 100%),radial-gradient(ellipse 17% 16% at 75% 24%,#000 70%,transparent 100%),radial-gradient(ellipse 6% 9% at 76% 45%,#000 60%,transparent 100%),radial-gradient(ellipse 6% 8% at 88% 76%,#000 65%,transparent 100%)"></div>
+        <sc-for list="{{ pins }}" as="p" hint-placeholder-count="10">
+          <div style="position:absolute;border-radius:50%;background:radial-gradient(circle,#FFE0EC 0%,#FF2E88 45%,#FF8A2B 100%);box-shadow:0 0 10px 3px rgba(255,46,136,.7),0 0 26px 6px rgba(255,90,78,.35);left:{{ p.x }};top:{{ p.y }};width:{{ p.s }};height:{{ p.s }};margin-left:{{ p.m }};margin-top:{{ p.m }}"></div>
+        </sc-for>
+        <div style="position:absolute;left:50%;top:20.4%;margin:-30px 0 0 -2px;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.12em;white-space:nowrap">LONDON · 31</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3);padding:4px 4px 0">SETTINGS</span>
+      <div style="border-radius:20px;background:var(--s1);border:1px solid var(--line);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:0 14px;border-bottom:1px solid var(--line)">
+          <div style="width:32px;height:32px;flex:none;border-radius:9px;background:rgba(61,220,151,.16);color:var(--ok);display:flex;align-items:center;justify-content:center"><i style="font-size:19px">face</i></div>
+          <div style="flex:1"><div style="font:600 15px Inter">Face ID lock for tickets</div></div>
+          <div onClick="{{ faceId.flip }}" style="position:relative;width:51px;height:31px;flex:none;border-radius:16px;cursor:pointer;transition:background .25s;background:{{ faceId.bg }}"><div style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.2,.8,.2,1);transform:translateX({{ faceId.x }})"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:0 14px;border-bottom:1px solid var(--line)">
+          <div style="width:32px;height:32px;flex:none;border-radius:9px;background:rgba(123,97,255,.18);color:var(--vi);display:flex;align-items:center;justify-content:center"><i style="font-size:19px">cloud_sync</i></div>
+          <div style="flex:1"><div style="font:600 15px Inter">Backup &amp; sync</div><div style="font:400 12px Inter;color:var(--tx3);margin-top:2px">Last backup 2 min ago</div></div>
+          <div onClick="{{ backup.flip }}" style="position:relative;width:51px;height:31px;flex:none;border-radius:16px;cursor:pointer;transition:background .25s;background:{{ backup.bg }}"><div style="position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:14px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:transform .25s cubic-bezier(.2,.8,.2,1);transform:translateX({{ backup.x }})"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:0 14px;border-bottom:1px solid var(--line)">
+          <div style="width:32px;height:32px;flex:none;border-radius:9px;background:rgba(255,46,136,.16);color:var(--mag);display:flex;align-items:center;justify-content:center"><i style="font-size:19px">contrast</i></div>
+          <div style="flex:1;font:600 15px Inter">Appearance</div>
+          <div style="display:flex;height:32px;padding:2px;border-radius:9px;background:var(--s2);box-sizing:border-box">
+            <div onClick="{{ setDark }}" style="display:flex;align-items:center;padding:0 12px;border-radius:7px;font:600 13px Inter;cursor:pointer;background:{{ apDarkBg }}">Dark</div>
+            <div onClick="{{ setLight }}" style="display:flex;align-items:center;padding:0 12px;border-radius:7px;font:600 13px Inter;cursor:pointer;background:{{ apLightBg }}">Light</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:60px;padding:0 14px">
+          <div style="width:32px;height:32px;flex:none;border-radius:9px;background:rgba(255,138,43,.16);color:#FF8A2B;display:flex;align-items:center;justify-content:center"><i style="font-size:19px">ios_share</i></div>
+          <div style="flex:1;font:600 15px Inter">Export memories</div>
+          <i style="color:var(--tx3)">chevron_right</i>
+        </div>
+      </div>
+      <div style="text-align:center;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:var(--tx3);padding-top:10px">ENCORE 1.0 (26)</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ s.onb }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:var(--bg);overflow:hidden;animation:enc-fade .35s ease">
+  <div style="position:absolute;top:0;left:0;right:0;height:540px;transition:background .5s;background:{{ onb.ph }}">
+    <div style="position:absolute;inset:0;background-image:var(--grain);opacity:.24;mix-blend-mode:overlay"></div>
+    <div style="position:absolute;top:110px;left:24px;font:500 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;color:rgba(255,255,255,.4)">CROWD PHOTO</div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,var(--bg) 98%)"></div>
+    <sc-if value="{{ onb0 }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:80px;top:190px;width:230px;padding:12px 12px 16px;border-radius:14px;background:#F7F4EE;transform:rotate(-5deg);box-shadow:0 30px 60px -20px rgba(0,0,0,.7)">
+        <div style="height:150px;border-radius:8px;background:radial-gradient(70% 55% at 30% 25%,#FF2E88,transparent 65%),radial-gradient(60% 50% at 80% 40%,#FF7A2F,transparent 60%),#160c12"></div>
+        <div style="font:400 24px/1 Anton,Impact,sans-serif;color:#16131A;margin-top:12px">ARCTIC MONKEYS</div>
+        <div style="font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.16em;color:rgba(22,19,26,.6);margin-top:4px">14 JUN 2025 · THE O2</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ onb1 }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:70px;top:200px;width:250px;padding:20px;border-radius:24px;background:rgba(14,14,18,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.14);color:#fff;transform:rotate(3deg)">
+        <div style="font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;opacity:.7">NEXT UP · TAME IMPALA</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-top:10px"><span style="font:400 92px/.8 Anton,Impact,sans-serif;background:linear-gradient(170deg,#FFD0E4,#FF2E88 45%,#FF8A2B);-webkit-background-clip:text;background-clip:text;color:transparent">12</span><span style="font:400 28px/1 Anton,Impact,sans-serif">DAYS</span></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:14px;font:600 12px Inter"><i style="font-size:16px;font-variation-settings:'FILL' 1;color:#FF8A2B">notifications_active</i>Doors in 2 h reminder set</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ onb2 }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:60px;top:200px;width:250px;height:150px;border-radius:20px;background:linear-gradient(135deg,#6B4EFF,#B592FF);transform:rotate(-10deg);box-shadow:0 20px 40px -16px rgba(0,0,0,.6)"></div>
+      <div style="position:absolute;left:80px;top:226px;width:250px;height:150px;border-radius:20px;background:linear-gradient(135deg,#FF2E88,#FF7A2F);transform:rotate(4deg);box-shadow:0 26px 50px -16px rgba(255,46,136,.6);color:#fff;padding:16px;box-sizing:border-box">
+        <div style="font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.18em;opacity:.85">SUN 01 NOV 2026</div>
+        <div style="font:400 28px/1 Anton,Impact,sans-serif;margin-top:6px">TAME IMPALA</div>
+        <div style="position:absolute;left:16px;right:16px;top:92px;border-top:2px dashed rgba(255,255,255,.4)"></div>
+        <div style="position:absolute;left:16px;bottom:14px;font:700 13px Inter">SEC 104 · ROW F</div>
+        <i style="position:absolute;right:14px;bottom:10px;font-size:28px">qr_code_2</i>
+      </div>
+    </sc-if>
+  </div>
+  <div onClick="{{ onbSkip }}" style="position:absolute;top:54px;right:16px;height:36px;padding:0 14px;border-radius:18px;background:rgba(20,18,26,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff;font:600 14px Inter;display:flex;align-items:center;cursor:pointer">Skip</div>
+  <div style="position:absolute;left:24px;right:24px;bottom:150px">
+    <div style="font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.2em;color:var(--mag)">{{ onb.step }}</div>
+    <div style="font:400 54px/.92 Anton,Impact,sans-serif;text-transform:uppercase;margin-top:12px;text-wrap:balance">{{ onb.t }}</div>
+    <div style="font:400 16px/1.5 Inter;color:var(--tx2);margin-top:12px;text-wrap:pretty">{{ onb.b }}</div>
+  </div>
+  <div style="position:absolute;left:24px;right:24px;bottom:44px;display:flex;flex-direction:column;gap:22px">
+    <div style="display:flex;gap:6px"><sc-for list="{{ onbDots }}" as="d" hint-placeholder-count="3"><div style="height:7px;border-radius:4px;transition:width .3s;width:{{ d.w }};background:{{ d.bg }}"></div></sc-for></div>
+    <div onClick="{{ onbNext }}" style="height:56px;border-radius:28px;background:linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;font:700 17px Inter;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 14px 34px -12px rgba(255,46,136,.8)">{{ onb.cta }}<i style="font-size:20px">arrow_forward</i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:40;height:88px;padding:0 6px 28px;box-sizing:border-box;display:grid;grid-template-columns:repeat(5,1fr);align-items:center;background:var(--tab);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);border-top:.5px solid var(--line)">
+  <div onClick="{{ tabMem }}" style="height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ tc.memories }}"><i style="font-size:25px;font-variation-settings:{{ tf.memories }}">auto_stories</i><span style="font:600 10px Inter">Memories</span></div>
+  <div onClick="{{ tabUp }}" style="height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ tc.upcoming }}"><i style="font-size:25px;font-variation-settings:{{ tf.upcoming }}">event</i><span style="font:600 10px Inter">Upcoming</span></div>
+  <div style="display:flex;justify-content:center"><div onClick="{{ openPlus }}" style="width:58px;height:58px;margin-top:-16px;border-radius:29px;background:linear-gradient(135deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;box-shadow:0 10px 26px -6px rgba(255,46,136,.8),0 0 0 5px var(--bg);transition:transform .3s cubic-bezier(.2,.8,.2,1);transform:rotate({{ plusRot }})"><i style="font-size:32px;font-variation-settings:'wght' 600">add</i></div></div>
+  <div onClick="{{ tabTk }}" style="height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ tc.tickets }}"><i style="font-size:25px;font-variation-settings:{{ tf.tickets }}">confirmation_number</i><span style="font:600 10px Inter">Tickets</span></div>
+  <div onClick="{{ tabPro }}" style="height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:{{ tc.profile }}"><i style="font-size:25px;font-variation-settings:{{ tf.profile }}">person</i><span style="font:600 10px Inter">Profile</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetPlus }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:80;background:rgba(5,5,8,.55);animation:enc-fade .2s ease"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:81;background:var(--s1);border-radius:32px 32px 0 0;padding:10px 16px 42px;animation:enc-up .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -24px 60px -20px rgba(255,46,136,.35)">
+  <div style="width:38px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 14px"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px 14px"><div style="font:800 22px Inter;letter-spacing:-.02em">Create</div><div onClick="{{ closeSheet }}" style="width:36px;height:36px;border-radius:18px;background:var(--s2);display:flex;align-items:center;justify-content:center;cursor:pointer"><i style="font-size:20px;color:var(--tx2)">close</i></div></div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div onClick="{{ plusMem }}" style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--s2);cursor:pointer"><div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#FF2E88,#FF8A2B);display:flex;align-items:center;justify-content:center;color:#fff"><i style="font-variation-settings:'FILL' 1">photo_library</i></div><div style="flex:1"><div style="font:700 16px Inter">Add memory</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">Start with photos from the night</div></div><i style="color:var(--tx3)">chevron_right</i></div>
+    <div onClick="{{ plusPlan }}" style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--s2);cursor:pointer"><div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#7B61FF,#B592FF);display:flex;align-items:center;justify-content:center;color:#fff"><i style="font-variation-settings:'FILL' 1">event_upcoming</i></div><div style="flex:1"><div style="font:700 16px Inter">Plan a concert</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">Countdown, reminders &amp; notes</div></div><i style="color:var(--tx3)">chevron_right</i></div>
+    <div onClick="{{ plusTk }}" style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--s2);cursor:pointer"><div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#E0531F,#FF9F43);display:flex;align-items:center;justify-content:center;color:#fff"><i style="font-variation-settings:'FILL' 1">confirmation_number</i></div><div style="flex:1"><div style="font:700 16px Inter">Add ticket</div><div style="font:400 13px Inter;color:var(--tx2);margin-top:2px">PDF, screenshot or paper scan</div></div><i style="color:var(--tx3)">chevron_right</i></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetTk }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:80;background:rgba(5,5,8,.55);animation:enc-fade .2s ease"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:81;background:var(--s1);border-radius:32px 32px 0 0;padding:10px 16px 42px;animation:enc-up .34s cubic-bezier(.2,.8,.2,1);box-shadow:0 -24px 60px -20px rgba(255,46,136,.35)">
+  <div style="width:38px;height:5px;border-radius:3px;background:var(--line2);margin:0 auto 14px"></div>
+  <div style="padding:0 4px 16px"><div style="font:800 22px Inter;letter-spacing:-.02em">Add a ticket</div><div style="font:400 14px Inter;color:var(--tx2);margin-top:4px">We'll read the artist, date and seat for you.</div></div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    <div onClick="{{ tkPdf }}" style="height:150px;border-radius:22px;background:var(--s2);display:flex;flex-direction:column;justify-content:space-between;padding:14px;box-sizing:border-box;cursor:pointer;border:1px solid var(--line)"><div style="width:46px;height:46px;border-radius:23px;background:rgba(255,46,136,.16);color:var(--mag);display:flex;align-items:center;justify-content:center"><i style="font-size:24px">picture_as_pdf</i></div><div style="font:700 15px/1.2 Inter">Import PDF</div></div>
+    <div onClick="{{ tkPhotos }}" style="height:150px;border-radius:22px;background:var(--s2);display:flex;flex-direction:column;justify-content:space-between;padding:14px;box-sizing:border-box;cursor:pointer;border:1px solid var(--line)"><div style="width:46px;height:46px;border-radius:23px;background:rgba(123,97,255,.18);color:var(--vi);display:flex;align-items:center;justify-content:center"><i style="font-size:24px">photo_library</i></div><div style="font:700 15px/1.2 Inter">Choose from Photos</div></div>
+    <div onClick="{{ tkScan }}" style="height:150px;border-radius:22px;background:linear-gradient(135deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:14px;box-sizing:border-box;cursor:pointer;box-shadow:0 12px 30px -12px rgba(255,46,136,.8)"><div style="width:46px;height:46px;border-radius:23px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center"><i style="font-size:24px">document_scanner</i></div><div style="font:700 15px/1.2 Inter">Scan paper ticket</div></div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:22px;background:var(--s2);color:var(--tx);font:600 14px Inter;box-shadow:0 12px 30px rgba(0,0,0,.35);white-space:nowrap;animation:enc-fade .25s ease"><i style="font-size:18px;color:var(--ok);font-variation-settings:'FILL' 1">check_circle</i>{{ toast }}</div>
+</sc-if>
+
+<div style="position:absolute;top:0;left:0;right:0;height:54px;z-index:60;display:flex;align-items:center;justify-content:space-between;padding:2px 34px 0 46px;box-sizing:border-box;pointer-events:none;color:{{ sbColor }}">
+  <span style="font:600 17px Inter;letter-spacing:-.01em">9:41</span>
+  <div style="display:flex;gap:6px;align-items:center"><i style="font-size:18px;font-variation-settings:'FILL' 1">signal_cellular_4_bar</i><i style="font-size:18px">wifi</i><div style="display:flex;align-items:center;gap:1px"><div style="width:23px;height:11px;border-radius:4px;border:1.2px solid currentColor;opacity:.9;padding:1.5px;box-sizing:border-box"><div style="width:80%;height:100%;border-radius:1.5px;background:currentColor"></div></div><div style="width:1.5px;height:4px;border-radius:1px;background:currentColor;opacity:.5"></div></div></div>
+</div>
+<div style="position:absolute;top:11px;left:50%;margin-left:-62px;width:124px;height:36px;border-radius:20px;background:#000;z-index:70"></div>
+<div style="position:absolute;bottom:8px;left:50%;margin-left:-67px;width:134px;height:5px;border-radius:3px;z-index:70;background:{{ hiColor }}"></div>
+</div>
+</div>
+
+<!--BOARD-->
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark'|'light'&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onb&quot;,&quot;memories&quot;,&quot;upcoming&quot;,&quot;tickets&quot;,&quot;profile&quot;],&quot;default&quot;:&quot;memories&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showBoard&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const G='linear-gradient(110deg,#FF2E88 0%,#FF5A4E 52%,#FF8A2B 100%)';
+const ph=(a,b,base)=>`conic-gradient(from 166deg at 50% -6%, transparent 0deg, rgba(255,255,255,.11) 5deg, transparent 11deg, transparent 17deg, rgba(255,255,255,.08) 21deg, transparent 27deg), radial-gradient(70% 55% at 22% 20%, ${a} 0%, transparent 64%), radial-gradient(60% 50% at 84% 32%, ${b} 0%, transparent 62%), radial-gradient(100% 50% at 50% 108%, #000 20%, transparent 72%), linear-gradient(172deg, ${base} 0%, #07070A 100%)`;
+const PEOPLE={JL:{n:'Jess',bg:'#E0247A'},TO:{n:'Tom',bg:'#6B4EFF'},AR:{n:'Ari',bg:'#E0651F'}};
+const TAGC=['#6B4EFF','#E0247A','#D4561A'];
+const MEM=[
+{id:'lcd',artist:'LCD Soundsystem',tour:'Primavera Sound 2026',venue:'Parc del Fòrum',city:'Barcelona',addr:'Plaça de Leonardo da Vinci, 08019 Barcelona',date:'05 JUN 2026',dow:'FRI',year:2026,photos:64,rating:5,genres:['Dance-punk','Electronic','Festival'],c:['#FF7A2F','#FF2E88','#2a1020'],set:['Dance Yrself Clean','I Can Change','Tribulations','Someone Great','Losing My Edge','All My Friends'],enc:2,notes:'Sun coming up by All My Friends. Strangers hugging strangers. Best festival set I have ever seen.',with:['JL','AR'],tk:null},
+{id:'jb',artist:'Japanese Breakfast',tour:'Jubilee Anniversary Tour',venue:'Roundhouse',city:'London',addr:'Chalk Farm Rd, London NW1 8EH',date:'17 MAR 2026',dow:'TUE',year:2026,photos:31,rating:4,genres:['Indie pop','Dream pop'],c:['#FF4FA0','#7B61FF','#1d1030'],set:['Paprika','Be Sweet','Kokomo, IN','Road Head','Slide Tackle','Diving Woman'],enc:1,notes:'Michelle hit the gong on Paprika and the whole room jumped. Got a setlist from the barrier.',with:['JL'],tk:null},
+{id:'fdc',artist:'Fontaines D.C.',tour:'Romance Tour',venue:'Alexandra Palace',city:'London',addr:'Alexandra Palace Way, London N22 7AY',date:'08 NOV 2025',dow:'SAT',year:2025,photos:22,rating:4,genres:['Post-punk','Rock'],c:['#FF8A2B','#A99BFF','#1a1418'],set:['Romance','Jackie Down the Line','Boys in the Better Land','Favourite','Starburster'],enc:1,notes:'Pit opened during Starburster. Lost a shoe, found the shoe. Worth it.',with:['TO'],tk:'fdc'},
+{id:'am',artist:'Arctic Monkeys',tour:'The Car Tour',venue:'The O2 Arena',city:'London',addr:'Peninsula Square, London SE10 0DX',date:'14 JUN 2025',dow:'SAT',year:2025,photos:48,rating:5,genres:['Indie rock','Alt rock'],c:['#FF2E88','#FF7A2F','#2a0f1c'],set:['Sculptures of Anything Goes','Brianstorm','Snap Out of It','Crying Lightning','Do I Wanna Know?','505','I Wanna Be Yours','R U Mine?'],enc:2,notes:'Alex walked out in that white suit and the whole arena lost it on Brianstorm. Voice gone by 505. Tom cried during Do I Wanna Know? (he denies it).',with:['JL','TO','AR'],tk:'am'},
+{id:'be',artist:'Billie Eilish',tour:'Hit Me Hard and Soft Tour',venue:'Accor Arena',city:'Paris',addr:'8 Bd de Bercy, 75012 Paris',date:'22 MAY 2025',dow:'THU',year:2025,photos:57,rating:5,genres:['Alt pop','Electropop'],c:['#7B61FF','#FF2E88','#130f2a'],set:['CHIHIRO','LUNCH','bad guy','BIRDS OF A FEATHER','Happier Than Ever'],enc:1,notes:'The cube stage. 20,000 people singing BIRDS OF A FEATHER in a Paris accent.',with:['AR'],tk:'be'},
+{id:'ma',artist:'Massive Attack',tour:'Mezzanine XXV',venue:'Zénith Paris',city:'Paris',addr:'211 Av. Jean Jaurès, 75019 Paris',date:'03 OCT 2024',dow:'THU',year:2024,photos:18,rating:4,genres:['Trip-hop'],c:['#FF5A4E','#3A2E8A','#170d14'],set:['Risingson','Angel','Inertia Creeps','Teardrop','Unfinished Sympathy'],enc:1,notes:'Teardrop live. Didn\u2019t breathe for four minutes.',with:['TO'],tk:null},
+{id:'bg',artist:'boygenius',tour:'The Tour',venue:'Forest Hills Stadium',city:'New York',addr:'1 Tennis Pl, Queens, NY 11375',date:'12 AUG 2024',dow:'MON',year:2024,photos:26,rating:5,genres:['Indie rock','Folk'],c:['#A99BFF','#FF8A2B','#151628'],set:['$20','Not Strong Enough','Cool About It','Satanist','Me & My Dog'],enc:1,notes:'Summer rain right before Not Strong Enough. Nobody left.',with:['JL','AR'],tk:null}];
+const UP=[
+{id:'ti',artist:'Tame Impala',tour:'Deadbeat Tour',venue:'Madison Square Garden',city:'New York',addr:'4 Pennsylvania Plaza, New York, NY 10001',day:'01',mon:'NOV',dow:'SUN',yr:'2026',doors:'18:30',show:'20:00',days:12,tk:'ti',c:['#FF7A2F','#7B61FF','#24102a'],notes:'Meet Jess at the 7th Ave entrance 17:45. Merch line before doors \u2014 get the tour poster.'},
+{id:'wl',artist:'Wet Leg',tour:'Moisturizer Tour',venue:'O2 Academy Brixton',city:'London',addr:'211 Stockwell Rd, London SW9 9SL',day:'14',mon:'NOV',dow:'SAT',yr:'2026',doors:'19:00',show:'20:30',days:25,tk:'wl',c:['#A99BFF','#FF2E88','#141428'],notes:'GA \u2014 get there early for the barrier.'},
+{id:'ls',artist:'Little Simz',tour:'Lotus Tour',venue:'Roundhouse',city:'London',addr:'Chalk Farm Rd, London NW1 8EH',day:'06',mon:'DEC',dow:'SUN',yr:'2026',doors:'19:00',show:'21:00',days:47,tk:null,c:['#FF2E88','#FF8A2B','#1c0e14'],notes:'Presale Friday 10:00 \u2014 set an alarm.'},
+{id:'bi',artist:'Bon Iver',tour:'SABLE, fABLE Tour',venue:'Royal Albert Hall',city:'London',addr:'Kensington Gore, London SW7 2AP',day:'18',mon:'JAN',dow:'MON',yr:'2027',doors:'18:45',show:'19:30',days:90,tk:'bi',c:['#FF8A2B','#3A2E8A','#1a1210'],notes:'Seated show. Dinner nearby first?'},
+{id:'kh',artist:'Khruangbin',tour:'A La Sala Tour',venue:'Zénith Paris',city:'Paris',addr:'211 Av. Jean Jaurès, 75019 Paris',day:'03',mon:'FEB',dow:'WED',yr:'2027',doors:'19:00',show:'20:30',days:106,tk:null,c:['#7B61FF','#FF7A2F','#120f22'],notes:'Eurostar Wed morning.'}];
+const TK={up:[
+{id:'ti',artist:'Tame Impala',tour:'Deadbeat Tour',date:'SUN 01 NOV 2026',time:'20:00',venue:'Madison Square Garden',city:'New York',seat:[['SEC','104'],['ROW','F'],['SEAT','12']],ft:'PDF',fi:'picture_as_pdf',pages:2,bg:'linear-gradient(135deg,#FF2E88 0%,#FF7A2F 100%)',glow:'rgba(255,46,136,.6)',code:'ENC 7F3K 2291 0104',file:'tame-impala-msg.pdf · 2 pages · 418 KB'},
+{id:'wl',artist:'Wet Leg',tour:'Moisturizer Tour',date:'SAT 14 NOV 2026',time:'20:30',venue:'O2 Academy Brixton',city:'London',seat:[['ENTRY','GA'],['AREA','Stand'],['GATE','B']],ft:'IMAGE',fi:'image',pages:1,bg:'linear-gradient(135deg,#6B4EFF 0%,#B592FF 100%)',glow:'rgba(123,97,255,.6)',code:'ENC 2WL9 7781 0033',file:'IMG_4471.png · screenshot'},
+{id:'bi',artist:'Bon Iver',tour:'SABLE, fABLE Tour',date:'MON 18 JAN 2027',time:'19:30',venue:'Royal Albert Hall',city:'London',seat:[['STALLS','K'],['ROW','8'],['SEAT','21']],ft:'SCAN',fi:'document_scanner',pages:1,bg:'linear-gradient(135deg,#3A1C3F 0%,#E0531F 100%)',glow:'rgba(224,83,31,.5)',code:'ENC 0BI4 1180 2121',file:'Scanned 12 Oct 2026 · enhanced'}],
+past:[
+{id:'am',artist:'Arctic Monkeys',tour:'The Car Tour',date:'SAT 14 JUN 2025',time:'19:30',venue:'The O2 Arena',city:'London',seat:[['BLOCK','112'],['ROW','M'],['SEAT','34']],ft:'PDF',fi:'picture_as_pdf',pages:1,bg:'linear-gradient(135deg,#2B2B36 0%,#5A2448 100%)',glow:'rgba(255,46,136,.35)',code:'ENC 9AM1 4406 1123',file:'arctic-monkeys-o2.pdf · 1 page · 212 KB'},
+{id:'be',artist:'Billie Eilish',tour:'Hit Me Hard and Soft Tour',date:'THU 22 MAY 2025',time:'20:00',venue:'Accor Arena',city:'Paris',seat:[['FLOOR','Fosse'],['GATE','3'],['ENTRY','GA']],ft:'IMAGE',fi:'image',pages:1,bg:'linear-gradient(135deg,#5B3BD6 0%,#FF2E88 100%)',glow:'rgba(123,97,255,.5)',code:'ENC 4BE2 0522 7710',file:'IMG_2210.png · screenshot'},
+{id:'fdc',artist:'Fontaines D.C.',tour:'Romance Tour',date:'SAT 08 NOV 2025',time:'19:00',venue:'Alexandra Palace',city:'London',seat:[['ENTRY','GA'],['AREA','Stand'],['DOOR','West']],ft:'SCAN',fi:'document_scanner',pages:1,bg:'linear-gradient(135deg,#C2410C 0%,#FF9F43 100%)',glow:'rgba(255,138,43,.5)',code:'ENC 6FD8 1108 0090',file:'Scanned 09 Nov 2025 · enhanced'}]};
+const ALLTK=[...TK.up,...TK.past];
+const PINS=[[50,20.4,14],[50.6,22,10],[50.6,27.6,8],[29.4,28,10],[53.7,19.6,8],[88.8,31.6,7],[22.5,43,6],[47.5,29.5,6],[90.3,84,6],[17.2,32.9,7],[57,22,6],[44.5,17,6]].map(([x,y,s])=>({x:x+'%',y:y+'%',s:s+'px',m:(-s/2)+'px'}));
+const QR=(()=>{let s=11;const r=()=>{s=(s*9301+49297)%233280;return s/233280};const f=(x,y,ox,oy)=>{const dx=x-ox,dy=y-oy;if(dx<0||dy<0||dx>6||dy>6)return null;return dx===0||dy===0||dx===6||dy===6||(dx>=2&&dx<=4&&dy>=2&&dy<=4)};const o=[];for(let y=0;y<25;y++)for(let x=0;x<25;x++){let v=f(x,y,0,0);if(v===null)v=f(x,y,18,0);if(v===null)v=f(x,y,0,18);if(v===null)v=((x<=7&&y<=7)||(x>=17&&y<=7)||(x<=7&&y>=17))?false:r()<.5;o.push(v?'#141218':'transparent')}return o})();
+const PAL=[['#FF2E88','#FF7A2F','#2a0f1c'],['#7B61FF','#FF2E88','#130f2a'],['#FF8A2B','#7B61FF','#1a1210'],['#FF4FA0','#3A2E8A','#170d14'],['#A99BFF','#FF8A2B','#151628'],['#FF5A4E','#FF2E88','#1c0e14']];
+const TABS=['memories','upcoming','tickets','profile'];
+const seatStr=t=>t?t.seat.map(s=>s[0]+' '+s[1]).join(' · '):'';
+const tg=on=>({bg:on?G:'var(--tog)',x:on?'20px':'0px'});
+
+class Component extends DCLogic {
+  state={screen:this.props.startScreen??'memories',tab:'memories',theme:this.props.theme??'dark',sheet:null,year:'All',memId:'am',evId:'ti',tkId:'ti',tkBack:'tickets',tkSeg:'up',expTk:null,page:0,onb:0,addStep:'pick',addSel:[0,2,3,5],form:{artist:'',venue:'The O2 Arena',date:'Sat, 14 Jun 2025 · 19:30',rating:0,notes:'',with:['JL','TO']},upEmpty:false,past:false,remind:true,faceId:true,backup:true,assignId:'ti',filt:'enh',toast:null};
+  componentDidUpdate(pp){
+    if(pp.theme!==this.props.theme&&this.props.theme)this.setState({theme:this.props.theme});
+    if(pp.startScreen!==this.props.startScreen&&this.props.startScreen)this.go(this.props.startScreen);
+  }
+  componentWillUnmount(){clearTimeout(this._tt)}
+  go=(screen,extra={})=>this.setState({screen,sheet:null,...(TABS.includes(screen)?{tab:screen}:{}),...extra});
+  say=t=>{this.setState({toast:t});clearTimeout(this._tt);this._tt=setTimeout(()=>this.setState({toast:null}),2200)};
+  setForm=p=>this.setState(s=>({form:{...s.form,...p}}));
+  renderVals(){
+    const st=this.state,scr=st.screen,dark=st.theme!=='light';
+    const s={};['onb','memories','memory','add','upcoming','event','tickets','ticket','scan','review','assign','profile'].forEach(k=>s[k]=scr===k);
+    const tc={},tf={};TABS.forEach(t=>{const a=st.tab===t&&TABS.includes(scr);tc[t]=a?'var(--tx)':'var(--tx3)';tf[t]=a?"'FILL' 1":"'FILL' 0"});
+    const photoTop=['memory','event','onb','scan','review'].includes(scr);
+    // memories
+    const starsOn=(r,off)=>[1,2,3,4,5].map(i=>({c:i<=r?'#FF8A2B':off}));
+    const card=m=>({...m,ph:ph(...m.c),glow:m.c[0]+'AA',stars:starsOn(m.rating,'rgba(255,255,255,.28)'),open:()=>this.go('memory',{memId:m.id})});
+    const yearChips=['All','2026','2025','2024'].map(y=>{const a=st.year===y;return{label:y,bg:a?G:'var(--s1)',color:a?'#fff':'var(--tx2)',border:a?'transparent':'var(--line)',pick:()=>this.setState({year:y})}});
+    const groups=[2026,2025,2024].filter(y=>st.year==='All'||String(y)===st.year).map(y=>{const items=MEM.filter(m=>m.year===y).map(card);return{year:String(y),count:items.length+' SHOWS',items}});
+    const m0=MEM.find(m=>m.id===st.memId)||MEM[3];
+    const gl=[[m0.c[0],m0.c[1]],[m0.c[1],'#7B61FF'],['#FF8A2B',m0.c[0]],[m0.c[0],'#000'],['#7B61FF',m0.c[1]],[m0.c[1],m0.c[0]]];
+    const memTk=ALLTK.find(t=>t.id===m0.tk);
+    const mem={...m0,ph:ph(...m0.c),starsT:starsOn(m0.rating,'var(--tx3)'),rlabel:m0.rating>=5?'Unforgettable':'Loved it',
+      tags:m0.genres.map((g,i)=>({label:g,bg:TAGC[i%3]})),
+      gallery:gl.map((c,i)=>({ph:ph(c[0],c[1],m0.c[2]),col:i===0?'span 2':'auto',row:i===0?'span 2':'auto',vid:i===2||i===5,dur:i===2?'0:42':'1:18',more:i===5?'+'+(m0.photos-6):''})),
+      setlist:m0.set.map((song,i)=>({song,n:String(i+1).padStart(2,'0'),encFirst:i===m0.set.length-m0.enc})),
+      people:m0.with.map(id=>({...PEOPLE[id],i:id}))};
+    // upcoming
+    const ev0=UP.find(e=>e.id===st.evId)||UP[0];
+    const evTk=ALLTK.find(t=>t.id===ev0.tk);
+    const ev={...ev0,ph:ph(...ev0.c),seat:seatStr(evTk)};
+    const next={...UP[0],ph:ph(...UP[0].c)};
+    const upRows=UP.slice(1).map(e=>({...e,badge:e.tk?'Ticket saved':'No ticket',bBg:e.tk?'var(--okbg)':'var(--s2)',bC:e.tk?'var(--ok)':'var(--tx3)',bI:e.tk?'check_circle':'do_not_disturb_on',open:()=>this.go('event',{evId:e.id,past:false})}));
+    // tickets
+    const list=TK[st.tkSeg];
+    const tks=list.map((t,i)=>({...t,seatL:t.seat.map(x=>({k:x[0],v:x[1]})),mt:i===0?'0px':(list[i-1].id===st.expTk?'14px':'-150px'),
+      tap:()=>{if(st.expTk===t.id||i===list.length-1)this.go('ticket',{tkId:t.id,tkBack:'tickets',page:0});else this.setState({expTk:t.id})}}));
+    const tk0=ALLTK.find(t=>t.id===st.tkId)||ALLTK[0];
+    const tk={...tk0,seatL:tk0.seat.map(x=>({k:x[0],v:x[1]})),pageLabel:'PAGE '+(st.page+1)+' OF '+tk0.pages,multi:tk0.pages>1,
+      dots:Array.from({length:tk0.pages},(_,i)=>({w:i===st.page?'18px':'6px',bg:i===st.page?'var(--tx)':'var(--line2)'}))};
+    // add memory
+    const addPhotos=Array.from({length:15},(_,i)=>{const p=PAL[i%6],idx=st.addSel.indexOf(i);return{ph:ph(p[(i+1)%2],p[i%2],p[2]),num:idx>=0?String(idx+1):'',sel:idx>=0,bBg:idx>=0?G:'rgba(0,0,0,.25)',ring:idx>=0?'inset 0 0 0 3px #FF2E88':'none',dim:idx>=0?'.82':'1',vid:i===4||i===10,dur:i===4?'0:24':'0:51',
+      toggle:()=>this.setState(s2=>({addSel:s2.addSel.includes(i)?s2.addSel.filter(x=>x!==i):[...s2.addSel,i]}))}});
+    const selCount=st.addSel.length;
+    const f=st.form;
+    const formStars=[1,2,3,4,5].map(i=>({c:i<=f.rating?'#FF8A2B':'var(--line2)',set:()=>this.setForm({rating:i})}));
+    const rateLabel=['Tap to rate','Meh','It was fine','Good night','Loved it','Unforgettable'][f.rating];
+    const formPeople=Object.keys(PEOPLE).map(k=>{const on=f.with.includes(k);return{...PEOPLE[k],i:k,ring:on?'0 0 0 2px var(--bg),0 0 0 4px #FF2E88':'none',op:on?'1':'.45',toggle:()=>this.setForm({with:on?f.with.filter(x=>x!==k):[...f.with,k]})}});
+    const selStrip=st.addSel.map(i=>addPhotos[i]);
+    // assign
+    const assign=UP.map((e,i)=>{const on=st.assignId===e.id;return{...e,sug:i===0,rBg:on?G:'transparent',rB:on?'transparent':'var(--line2)',rI:on?'1':'0',bd:on?'1.5px solid #FF2E88':'1px solid var(--line)',pick:()=>this.setState({assignId:e.id})}});
+    const filters=[['orig','Original','#cfc2ab','none'],['enh','Enhanced','#f6f0e4','none'],['bw','B&W','#ececec','grayscale(1) contrast(1.15)']].map(([k,l,c,fl])=>{const on=st.filt===k;return{label:l,c,fl,ring:on?'0 0 0 2px #FF2E88':'0 0 0 1px rgba(255,255,255,.15)',lc:on?'#fff':'rgba(255,255,255,.55)',pick:()=>this.setState({filt:k})}});
+    const fcur=filters.find((x,i)=>['orig','enh','bw'][i]===st.filt);
+    // onboarding
+    const ONB=[{t:'Relive your concerts',b:'Photos, setlists and notes from every show you\u2019ve been to \u2014 your own gig archive.',c:PAL[0]},{t:'Never miss a show',b:'Count down to the next one, get a nudge before doors, keep plans in one place.',c:PAL[1]},{t:'All tickets in one place',b:'PDFs, screenshots, paper stubs. Locked with Face ID, ready at the gate.',c:PAL[2]}];
+    const o=ONB[st.onb];
+    // nav
+    const navKey=st.sheet?'sheet-'+st.sheet:scr==='onb'?'onb-'+st.onb:scr==='add'?'add-'+st.addStep:(scr==='upcoming'&&st.upEmpty)?'upcoming-empty':(scr==='event'&&st.past)?'event-past':scr;
+    const N=(label,n,key,patch)=>({label,n,key,go:()=>this.setState({sheet:null,...patch}),c:navKey===key?'var(--tx)':'var(--tx2)',bg:navKey===key?'var(--s1)':'transparent'});
+    const navGroups=[
+      {title:'Memories',items:[N('Memories feed','01','memories',{screen:'memories',tab:'memories'}),N('Memory detail','02','memory',{screen:'memory'}),N('Add memory · photos','03','add-pick',{screen:'add',addStep:'pick'}),N('Add memory · auto-filled','03','add-form',{screen:'add',addStep:'form'})]},
+      {title:'Upcoming',items:[N('Upcoming events','04','upcoming',{screen:'upcoming',tab:'upcoming',upEmpty:false}),N('Upcoming · empty state','04','upcoming-empty',{screen:'upcoming',tab:'upcoming',upEmpty:true}),N('Event detail','05','event',{screen:'event',past:false}),N('Event · after the show','05','event-past',{screen:'event',past:true})]},
+      {title:'Tickets',items:[N('Tickets wallet','06','tickets',{screen:'tickets',tab:'tickets'}),N('Ticket detail','07','ticket',{screen:'ticket',tkId:'ti',page:0}),N('Add ticket sheet','08','sheet-ticket',{screen:'tickets',tab:'tickets',sheet:'ticket'}),N('Scan viewfinder','08','scan',{screen:'scan'}),N('Crop & enhance','08','review',{screen:'review'}),N('Assign to event','08','assign',{screen:'assign'})]},
+      {title:'Profile & global',items:[N('Profile','09','profile',{screen:'profile',tab:'profile'}),N('Create sheet (+)','—','sheet-plus',{screen:TABS.includes(scr)?scr:'memories',sheet:'plus'})]},
+      {title:'Onboarding',items:[N('Relive your concerts','10','onb-0',{screen:'onb',onb:0}),N('Never miss a show','10','onb-1',{screen:'onb',onb:1}),N('All tickets in one place','10','onb-2',{screen:'onb',onb:2})]}];
+    const T=(k)=>{const t=tg(st[k]);return{...t,flip:()=>this.setState(x=>({[k]:!x[k]}))}};
+    return {
+      theme:dark?'dark':'light',s,tc,tf,showTabs:TABS.includes(scr),sbColor:photoTop?'#fff':'var(--tx)',hiColor:photoTop?'rgba(255,255,255,.85)':'var(--tx)',
+      setDark:()=>this.setState({theme:'dark'}),setLight:()=>this.setState({theme:'light'}),thDarkBg:dark?'var(--seg)':'transparent',thLightBg:dark?'transparent':'var(--seg)',
+      navGroups,
+      tabMem:()=>this.go('memories'),tabUp:()=>this.go('upcoming'),tabTk:()=>this.go('tickets'),tabPro:()=>this.go('profile'),
+      openPlus:()=>this.setState(x=>({sheet:x.sheet==='plus'?null:'plus'})),plusRot:st.sheet==='plus'?'45deg':'0deg',closeSheet:()=>this.setState({sheet:null}),
+      sheetPlus:st.sheet==='plus',sheetTk:st.sheet==='ticket',
+      plusMem:()=>this.go('add',{addStep:'pick'}),plusPlan:()=>this.go('upcoming',{upEmpty:false}),plusTk:()=>this.setState({sheet:'ticket'}),
+      tkPdf:()=>this.go('assign'),tkPhotos:()=>this.go('assign'),tkScan:()=>this.go('scan'),
+      hasToast:!!st.toast,toast:st.toast,
+      yearChips,groups,mem,memHasTk:!!memTk,memNoTk:!memTk,memTk:memTk||{},backMem:()=>this.go(st.tab),
+      openMemTk:()=>memTk&&this.go('ticket',{tkId:memTk.id,tkBack:'memory',page:0}),attachTk:()=>this.setState({sheet:'ticket'}),
+      next,upRows,upHas:!st.upEmpty,upIsEmpty:st.upEmpty,openNext:()=>this.go('event',{evId:'ti',past:false}),planNew:()=>this.setState({sheet:'plus'}),importTk:()=>this.setState({sheet:'ticket'}),
+      ev,evHasTk:!!evTk,evNoTk:!evTk,isPast:st.past,notPast:!st.past,backEv:()=>this.go('upcoming'),openEvTk:()=>evTk&&this.go('ticket',{tkId:evTk.id,tkBack:'event',page:0}),toMemory:()=>this.go('add',{addStep:'pick'}),
+      directions:()=>this.say('Opening Maps…'),remind:T('remind'),
+      tks,segLeft:st.tkSeg==='up'?'3px':'50%',segUpC:st.tkSeg==='up'?'var(--tx)':'var(--tx3)',segPastC:st.tkSeg==='past'?'var(--tx)':'var(--tx3)',
+      segUp:()=>this.setState({tkSeg:'up',expTk:null}),segPast:()=>this.setState({tkSeg:'past',expTk:null}),openTkSheet:()=>this.setState({sheet:'ticket'}),
+      tk,qr:QR,page0:st.page===0,page1:st.page===1,prevPage:()=>this.setState(x=>({page:Math.max(0,x.page-1)})),nextPage:()=>this.setState(x=>({page:Math.min(tk0.pages-1,x.page+1)})),
+      backTk:()=>this.go(st.tkBack==='tickets'?'tickets':st.tkBack),share:()=>this.say('Share sheet'),linkEv:()=>this.say('Linked to '+tk0.artist),
+      addPick:st.addStep==='pick',addForm:st.addStep==='form',addPhotos,selCount:String(selCount),selStrip,
+      addCancel:()=>this.go(st.tab),addNext:()=>selCount&&this.setState({addStep:'form'}),addBack:()=>this.setState({addStep:'pick'}),
+      contLabel:selCount?'Continue with '+selCount+' photo'+(selCount>1?'s':''):'Select photos',contOp:selCount?'1':'.4',
+      form:f,setArtist:e=>this.setForm({artist:e.target.value}),setVenue:e=>this.setForm({venue:e.target.value}),setDate:e=>this.setForm({date:e.target.value}),setNotes:e=>this.setForm({notes:e.target.value}),
+      showSuggest:!f.artist,useSuggest:()=>this.setForm({artist:'Arctic Monkeys'}),formStars,rateLabel,formPeople,
+      saveMem:()=>{this.go('memories');this.say('Memory saved')},
+      shutter:()=>this.go('review'),closeScan:()=>this.go('tickets'),retake:()=>this.go('scan'),useScan:()=>this.go('assign'),filters,paperC:fcur.c,paperF:fcur.fl,
+      assign,newEvent:()=>this.say('New event created'),assignBack:()=>this.go('review'),saveTk:()=>{this.go('tickets',{tkSeg:'up'});this.say('Ticket saved')},
+      pins:PINS,faceId:T('faceId'),backup:T('backup'),apDarkBg:dark?'var(--seg)':'transparent',apLightBg:dark?'transparent':'var(--seg)',
+      onb:{...o,ph:ph(...o.c),step:'0'+(st.onb+1)+' / 03',cta:st.onb<2?'Continue':'Get started'},onb0:st.onb===0,onb1:st.onb===1,onb2:st.onb===2,
+      onbDots:[0,1,2].map(i=>({w:i===st.onb?'22px':'7px',bg:i===st.onb?G:'var(--line2)'})),
+      onbNext:()=>st.onb<2?this.setState({onb:st.onb+1}):this.go('memories'),onbSkip:()=>this.go('memories'),
+      showBoard:this.props.showBoard??true
+    };
+  }
+}
+</script>
+</body>
+</html>
