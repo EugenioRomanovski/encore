@@ -43,12 +43,12 @@ export default function Profile() {
   }
 
   const doImport = async () => {
-    const [f] = await pickFiles('application/json,.json')
+    const [f] = await pickFiles('application/zip,.zip,application/json,.json')
     if (!f) return
     setBusy('Восстанавливаем…')
     try {
       const r = await importBackup(f)
-      say(`Восстановлено: ${pl(r.memories, ['воспоминание', 'воспоминания', 'воспоминаний'])}`)
+      say(`Восстановлено: ${pl(r.memories, ['воспоминание', 'воспоминания', 'воспоминаний'])}, ${pl(r.events, ['план', 'плана', 'планов'])}, ${pl(r.tickets, ['билет', 'билета', 'билетов'])}`)
     } catch (e) {
       say(e instanceof Error ? e.message : 'Не удалось прочитать файл')
     } finally {
@@ -149,12 +149,12 @@ export default function Profile() {
             </div>
             <button className="list-row" onClick={doExport}>
               <div className="list-ico" style={{ background: 'rgba(123,97,255,.18)', color: 'var(--vi)' }}><Download size={18} /></div>
-              <div style={{ flex: 1 }}><div className="list-title">Резервная копия</div><div className="list-sub">Сохранить всё в файл, вместе с фото</div></div>
+              <div style={{ flex: 1 }}><div className="list-title">Резервная копия</div><div className="list-sub">Архив .zip: фото, видео, билеты и записи</div></div>
               <ChevronRight size={20} color="var(--tx3)" />
             </button>
             <button className="list-row" onClick={doImport}>
               <div className="list-ico" style={{ background: 'rgba(61,220,151,.16)', color: 'var(--ok)' }}><Upload size={18} /></div>
-              <div style={{ flex: 1 }}><div className="list-title">Восстановить из копии</div><div className="list-sub">Загрузить файл .json</div></div>
+              <div style={{ flex: 1 }}><div className="list-title">Восстановить из копии</div><div className="list-sub">Файл копии .zip</div></div>
               <ChevronRight size={20} color="var(--tx3)" />
             </button>
             {/* demo data is offered only until the first own concert; once loaded it can always be removed */}
