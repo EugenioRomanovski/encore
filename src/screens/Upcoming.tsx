@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { CalendarPlus, CheckCircle2, ChevronRight, MinusCircle, Plus, Sparkles } from 'lucide-react'
 import { db, type PlannedEvent } from '../lib/db'
 import { dayNum, daysUntil, monShort, pl, plural, stampShort, todayISO } from '../lib/format'
-import { loadDemo } from '../lib/demo'
+import { hasOwnConcerts, loadDemo } from '../lib/demo'
 import { Cover } from '../components/Cover'
 import { TicketArt } from '../components/ui'
 import { useUI } from '../store/ui'
@@ -93,6 +93,7 @@ export default function Upcoming() {
   const openSheet = useUI((s) => s.openSheet)
   const events = useLiveQuery(() => db.events.orderBy('date').toArray(), [])
   const withTicket = useTicketEventIds()
+  const own = useLiveQuery(hasOwnConcerts, [])
   const today = todayISO()
   const future = (events || []).filter((e) => e.date >= today)
   const past = (events || []).filter((e) => e.date < today).reverse()
@@ -117,7 +118,7 @@ export default function Upcoming() {
           <div className="empty-actions">
             <button className="btn btn-primary" onClick={() => nav('/event/new')}><CalendarPlus size={20} />Запланировать концерт</button>
             <button className="btn btn-secondary" onClick={() => openSheet('ticket')}>Или сначала добавить билет</button>
-            <button className="link" style={{ marginTop: 8 }} onClick={() => loadDemo()}>Посмотреть на демо-данных</button>
+            {own === false && <button className="link" style={{ marginTop: 8 }} onClick={() => loadDemo()}>Посмотреть на демо-данных</button>}
           </div>
         </div>
       )}

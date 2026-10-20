@@ -128,6 +128,26 @@ a {
     transform: none;
   }
 }
+@keyframes enc-push {
+  from {
+    opacity: 0;
+    transform: translate3d(32px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes enc-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(-20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @keyframes enc-up {
   from {
     transform: translateY(100%);
@@ -161,15 +181,33 @@ a {
 /* ---------- layout ---------- */
 .screen {
   min-height: 100dvh;
-  animation: enc-in 0.3s var(--ease);
+}
+
+/* Route transitions. Only opacity + transform on the route wrapper, never on
+   fixed layers: a transformed ancestor turns position:fixed into absolute. */
+.route-push {
+  animation: enc-push 0.36s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+.route-pop {
+  animation: enc-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+}
+.route-fade {
+  animation: enc-fade 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .route-push,
+  .route-pop {
+    animation: enc-fade 0.2s ease-out both;
+  }
 }
 .screen.with-tabs {
   padding-bottom: calc(110px + var(--sab));
 }
 .fixed-col {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: var(--app-w);
 }

@@ -135,7 +135,7 @@ export default function TicketReview() {
   const pts = fit ? quad.map((p) => ({ x: p.x * fit.k + fit.ox, y: p.y * fit.k + fit.oy })) : []
 
   return (
-    <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 60, background: '#0B0B0F', color: '#fff', display: 'flex', flexDirection: 'column', animation: 'enc-in .3s var(--ease)' }}>
+    <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 60, background: '#0B0B0F', color: '#fff', display: 'flex', flexDirection: 'column', animation: 'enc-fade .25s ease-out' }}>
       <div style={{ padding: 'calc(var(--sat) + 8px) 8px 0' }}>
         <div className="navbar-grid">
           <button className="nav-link" style={{ color: 'rgba(255,255,255,.7)' }} onClick={stage === 'crop' ? retake : () => setStage('crop')}>{stage === 'crop' ? 'Переснять' : 'Рамка'}</button>

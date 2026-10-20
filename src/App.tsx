@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { createBrowserRouter, Navigate, Outlet, RouterProvider, ScrollRestoration, useLocation } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, ScrollRestoration, useLocation, useNavigationType } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { Sheets } from './components/Sheets'
 import { Busy, Toast } from './components/Overlays'
@@ -19,11 +19,26 @@ import Profile from './screens/Profile'
 import Onboarding from './screens/Onboarding'
 
 const TAB_PATHS = ['/', '/upcoming', '/tickets', '/profile']
+// full-screen layers that are position:fixed — they must not sit inside a transform
+const FULLSCREEN = ['/tickets/scan', '/tickets/review', '/welcome']
+
+function transitionFor(from: string, to: string, type: string) {
+  if (FULLSCREEN.includes(to) || FULLSCREEN.includes(from)) return 'route-fade'
+  if (TAB_PATHS.includes(from) && TAB_PATHS.includes(to)) return 'route-fade'
+  if (type === 'REPLACE') return 'route-fade'
+  return type === 'POP' ? 'route-pop' : 'route-push'
+}
 
 function Layout() {
   const loc = useLocation()
   const theme = useUI((s) => s.theme)
   const onboarded = useUI((s) => s.onboarded)
+  const navType = useNavigationType()
+  // decided once per path change, so unrelated re-renders can't restart or cut the animation
+  const route = useRef<{ path: string; cls?: string }>({ path: loc.pathname })
+  if (route.current.path !== loc.pathname) {
+    route.current = { path: loc.pathname, cls: transitionFor(route.current.path, loc.pathname, navType) }
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -34,7 +49,9 @@ function Layout() {
 
   return (
     <>
-      <Outlet />
+      <div key={loc.pathname} className={route.current.cls}>
+        <Outlet />
+      </div>
       {TAB_PATHS.includes(loc.pathname) && <TabBar />}
       <Sheets />
       <Toast />

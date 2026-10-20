@@ -3,7 +3,7 @@ import { ChevronRight, Contrast, Download, MapPin, Pencil, Sparkles, Trash2, Upl
 import { db, wipeAll } from '../lib/db'
 import { pl, year } from '../lib/format'
 import { exportBackup, importBackup } from '../lib/backup'
-import { DEMO_MEMORIES, loadDemo, removeDemo } from '../lib/demo'
+import { DEMO_MEMORIES, hasOwnConcerts, loadDemo, removeDemo } from '../lib/demo'
 import { pickFiles } from '../lib/media'
 import { initials } from '../lib/palette'
 import { useUI } from '../store/ui'
@@ -25,7 +25,7 @@ export default function Profile() {
     const venues = count((m) => m.venue)
     const since = ms.length ? Math.min(...ms.map((m) => year(m.date))) : null
     const demo = await db.memories.get(DEMO_MEMORIES[0].id)
-    return { total: ms.length, artists, venues, since, demo: !!demo }
+    return { total: ms.length, artists, venues, since, demo: !!demo, own: await hasOwnConcerts() }
   }, [])
 
   const editName = () => {
@@ -157,11 +157,14 @@ export default function Profile() {
               <div style={{ flex: 1 }}><div className="list-title">Восстановить из копии</div><div className="list-sub">Загрузить файл .json</div></div>
               <ChevronRight size={20} color="var(--tx3)" />
             </button>
-            <button className="list-row" onClick={() => (stats?.demo ? removeDemo().then(() => say('Демо-данные убраны')) : loadDemo().then(() => say('Демо-данные загружены')))}>
-              <div className="list-ico" style={{ background: 'rgba(255,138,43,.16)', color: '#FF8A2B' }}><Sparkles size={18} /></div>
-              <div style={{ flex: 1 }} className="list-title">{stats?.demo ? 'Убрать демо-данные' : 'Загрузить демо-данные'}</div>
-              <ChevronRight size={20} color="var(--tx3)" />
-            </button>
+            {/* demo data is offered only until the first own concert; once loaded it can always be removed */}
+            {stats && (stats.demo || !stats.own) && (
+              <button className="list-row" onClick={() => (stats.demo ? removeDemo().then(() => say('Демо-данные убраны')) : loadDemo().then(() => say('Демо-данные загружены')))}>
+                <div className="list-ico" style={{ background: 'rgba(255,138,43,.16)', color: '#FF8A2B' }}><Sparkles size={18} /></div>
+                <div style={{ flex: 1 }} className="list-title">{stats.demo ? 'Убрать демо-данные' : 'Загрузить демо-данные'}</div>
+                <ChevronRight size={20} color="var(--tx3)" />
+              </button>
+            )}
             <button className="list-row" onClick={wipe}>
               <div className="list-ico" style={{ background: 'rgba(255,90,95,.14)', color: 'var(--danger)' }}><Trash2 size={18} /></div>
               <div style={{ flex: 1, color: 'var(--danger)' }} className="list-title">Удалить все данные</div>

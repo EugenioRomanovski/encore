@@ -80,3 +80,11 @@ export const DEMO_QR: boolean[] = (() => {
     }
   return o
 })()
+
+const isDemo = (id: string) => id.startsWith('demo-')
+
+/** Whether the user has added any concert of their own (memory or plan) — then demo data is no longer offered. */
+export async function hasOwnConcerts() {
+  const [m, e] = await Promise.all([db.memories.toCollection().primaryKeys(), db.events.toCollection().primaryKeys()])
+  return [...m, ...e].some((id) => !isDemo(id))
+}

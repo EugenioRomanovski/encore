@@ -5,7 +5,7 @@ import { Images, MapPin, Search, X } from 'lucide-react'
 import { db, type Memory } from '../lib/db'
 import { pl, stamp, year } from '../lib/format'
 import { glow } from '../lib/palette'
-import { loadDemo } from '../lib/demo'
+import { hasOwnConcerts, loadDemo } from '../lib/demo'
 import { Cover } from '../components/Cover'
 import { Stars, TicketArt } from '../components/ui'
 
@@ -54,6 +54,7 @@ export default function Memories() {
   const [searchOpen, setSearchOpen] = useState(!!q)
   const [yr, setYr] = useState<string>('all')
   const all = useLiveQuery(() => db.memories.orderBy('date').reverse().toArray(), [])
+  const own = useLiveQuery(hasOwnConcerts, [])
   const hdr = useRef<HTMLDivElement>(null)
   const [hdrH, setHdrH] = useState(150)
 
@@ -95,7 +96,7 @@ export default function Memories() {
           <div className="empty-text">Добавьте фото с концерта — мы прочитаем дату из снимков, а вы допишете площадку, сет-лист и впечатления.</div>
           <div className="empty-actions">
             <button className="btn btn-primary" onClick={() => nav('/memory/new')}><Images size={20} />Добавить воспоминание</button>
-            <button className="btn btn-secondary" onClick={() => loadDemo()}>Посмотреть на демо-данных</button>
+            {own === false && <button className="btn btn-secondary" onClick={() => loadDemo()}>Посмотреть на демо-данных</button>}
           </div>
         </div>
       </div>
