@@ -125,3 +125,16 @@ export function pickFiles(accept: string, multiple = false, capture?: string): P
     input.click()
   })
 }
+
+/** Center-cropped square JPEG (for profile photos). */
+export async function squareImage(file: Blob, size = 400): Promise<Blob> {
+  const src = await loadBitmap(file)
+  const w = 'naturalWidth' in src ? src.naturalWidth : src.width
+  const h = 'naturalHeight' in src ? src.naturalHeight : src.height
+  const side = Math.min(w, h)
+  const c = document.createElement('canvas')
+  c.width = c.height = Math.min(size, side)
+  c.getContext('2d')!.drawImage(src, (w - side) / 2, (h - side) / 2, side, side, 0, 0, c.width, c.height)
+  if ('close' in src) src.close()
+  return canvasToBlob(c, 'image/jpeg', 0.86)
+}

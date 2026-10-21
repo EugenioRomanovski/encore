@@ -25,7 +25,7 @@ export function FriendPicker({ value, onChange, lockedId }: { value: FriendRef[]
       {all.map((f) => (
         <button key={f.id} type="button" onClick={() => toggle(f)} style={{ flex: 'none', width: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, opacity: on(f.id) ? 1 : 0.5 }}>
           <div style={{ position: 'relative' }}>
-            <Avatar name={f.name} size={52} style={{ boxShadow: on(f.id) ? '0 0 0 2px var(--bg),0 0 0 4px #FF2E88' : 'none' }} />
+            <Avatar name={f.name} src={f.avatar} size={52} style={{ boxShadow: on(f.id) ? '0 0 0 2px var(--bg),0 0 0 4px #FF2E88' : 'none' }} />
             {on(f.id) && (
               <div style={{ position: 'absolute', right: -2, bottom: -2, width: 20, height: 20, borderRadius: 10, background: 'var(--grad)', border: '2px solid var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 <Check size={11} strokeWidth={3.5} />

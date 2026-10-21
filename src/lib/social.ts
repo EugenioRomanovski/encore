@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 import type { FriendRef } from './db'
 import { setAfterSync, supabase, useSync } from './sync'
@@ -13,12 +14,14 @@ export interface Profile {
   user_id: string
   username: string
   display_name: string
+  avatar_url?: string | null
 }
 
 export interface Person {
   id: string
   username: string
   name: string
+  avatar?: string
 }
 
 export interface SharePayload {
@@ -89,16 +92,20 @@ export function usernameProblem(u: string): string | null {
   return null
 }
 
-const toPerson = (p: Profile): Person => ({ id: p.user_id, username: p.username, name: p.display_name || p.username })
-export const toFriendRef = (p: Person): FriendRef => ({ id: p.id, username: p.username, name: p.name })
+const PROFILE_COLS = 'user_id,username,display_name,avatar_url'
+const toPerson = (p: Profile): Person => ({ id: p.user_id, username: p.username, name: p.display_name || p.username, avatar: p.avatar_url || undefined })
+export const toFriendRef = (p: Person): FriendRef => ({ id: p.id, username: p.username, name: p.name, avatar: p.avatar })
 
 // ---------- profile ----------
 
 async function loadProfile(uid: string) {
-  const { data, error } = await supabase.from('profiles').select('user_id,username,display_name').eq('user_id', uid).maybeSingle()
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLS).eq('user_id', uid).maybeSingle()
   if (error) throw error
   const profile = (data as Profile | null) ?? null
   setSocial({ profile })
+  // a photo picked before the account had a profile goes up now; otherwise the account's photo wins
+  const local = readLocalAvatar()
+  if (profile && local?.pending) await uploadAvatar(await (await fetch(local.dataUrl)).blob())
   // the account's name wins on every device; a name typed before signing in fills an empty one
   const ui = useUI.getState()
   if (profile?.display_name) {
@@ -125,8 +132,10 @@ export async function saveProfile(username: string, displayName: string) {
     if (error.code === '23505') throw new Error('Это имя уже занято')
     throw error
   }
-  setSocial({ profile: row })
+  setSocial({ profile: { ...useSocial.getState().profile, ...row } })
   if (displayName.trim()) useUI.getState().setName(displayName.trim())
+  const local = readLocalAvatar()
+  if (local?.pending) await uploadAvatar(await (await fetch(local.dataUrl)).blob()).catch(() => {})
 }
 
 /** Keep the account's display name in step with the name edited in the profile header. */
@@ -136,6 +145,85 @@ export async function pushDisplayName(name: string) {
   if (!uid || !profile) return
   setSocial({ profile: { ...profile, display_name: name } })
   await supabase.from('profiles').update({ display_name: name, updated_at: new Date().toISOString() }).eq('user_id', uid)
+}
+
+// ---------- avatar ----------
+
+const AVATAR = 'encore.avatar'
+interface LocalAvatar {
+  dataUrl: string
+  /** picked without an account profile yet — upload when there is one */
+  pending: boolean
+}
+const readLocalAvatar = () => read<LocalAvatar | null>(AVATAR, null)
+const avatarListeners = new Set<() => void>()
+const writeLocalAvatar = (v: LocalAvatar | null) => {
+  try {
+    if (v) localStorage.setItem(AVATAR, JSON.stringify(v))
+    else localStorage.removeItem(AVATAR)
+  } catch {
+    /* private mode / quota */
+  }
+  avatarListeners.forEach((f) => f())
+}
+export const subscribeLocalAvatar = (f: () => void) => (avatarListeners.add(f), () => void avatarListeners.delete(f))
+export const localAvatarUrl = () => readLocalAvatar()?.dataUrl
+
+const blobToDataUrl = (b: Blob) =>
+  new Promise<string>((res, rej) => {
+    const r = new FileReader()
+    r.onload = () => res(r.result as string)
+    r.onerror = () => rej(r.error)
+    r.readAsDataURL(b)
+  })
+
+const avatarPath = (url?: string | null) => (url ? url.split('/object/public/avatars/')[1]?.split('?')[0] : undefined)
+
+async function uploadAvatar(blob: Blob) {
+  const uid = useSync.getState().user?.id
+  const profile = useSocial.getState().profile
+  if (!uid || !profile) return false
+  const path = `${uid}/avatar-${Date.now()}.jpg`
+  const { error } = await supabase.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+  if (error) throw error
+  const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
+  const { error: e2 } = await supabase.from('profiles').update({ avatar_url: url, updated_at: new Date().toISOString() }).eq('user_id', uid)
+  if (e2) throw e2
+  const old = avatarPath(profile.avatar_url)
+  if (old) await supabase.storage.from('avatars').remove([old]).catch(() => {})
+  setSocial({ profile: { ...profile, avatar_url: url } })
+  const local = readLocalAvatar()
+  if (local) writeLocalAvatar({ ...local, pending: false })
+  return true
+}
+
+/** The photo to show for me: the account's when signed in, otherwise (or until it's uploaded) the device copy. */
+export function useMyAvatar(): string | undefined {
+  const local = useSyncExternalStore(subscribeLocalAvatar, () => localStorage.getItem(AVATAR))
+  const signedIn = useSync((s) => !!s.user)
+  const profile = useSocial((s) => s.profile)
+  const mine: LocalAvatar | null = local ? JSON.parse(local) : null
+  if (!signedIn || !profile) return mine?.dataUrl
+  return mine?.pending ? mine.dataUrl : profile.avatar_url || undefined
+}
+
+/** Set the profile photo: kept on the device, and uploaded to the account when signed in. */
+export async function setAvatar(square: Blob) {
+  const dataUrl = await blobToDataUrl(square)
+  writeLocalAvatar({ dataUrl, pending: true })
+  await uploadAvatar(square)
+}
+
+export async function removeAvatar() {
+  writeLocalAvatar(null)
+  const uid = useSync.getState().user?.id
+  const profile = useSocial.getState().profile
+  if (!uid || !profile?.avatar_url) return
+  const old = avatarPath(profile.avatar_url)
+  const { error } = await supabase.from('profiles').update({ avatar_url: null, updated_at: new Date().toISOString() }).eq('user_id', uid)
+  if (error) throw error
+  if (old) await supabase.storage.from('avatars').remove([old]).catch(() => {})
+  setSocial({ profile: { ...profile, avatar_url: null } })
 }
 
 // ---------- friends ----------
@@ -148,7 +236,7 @@ async function loadFriends(uid: string) {
   const ids = [...new Set(rows.map(other))]
   const people = new Map<string, Person>()
   if (ids.length) {
-    const { data: ps, error: e2 } = await supabase.from('profiles').select('user_id,username,display_name').in('user_id', ids)
+    const { data: ps, error: e2 } = await supabase.from('profiles').select(PROFILE_COLS).in('user_id', ids)
     if (e2) throw e2
     for (const p of (ps || []) as Profile[]) people.set(p.user_id, toPerson(p))
   }
@@ -167,7 +255,7 @@ export async function searchPeople(q: string): Promise<Person[]> {
   const me = useSync.getState().user?.id
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id,username,display_name')
+    .select(PROFILE_COLS)
     .like('username', `${u}%`)
     .order('username')
     .limit(20)
@@ -230,7 +318,7 @@ async function loadInbox(uid: string) {
   const known = new Map(useSocial.getState().friends.map((f) => [f.id, f]))
   const missing = [...new Set(rows.map((r) => r.from_user))].filter((id) => !known.has(id))
   if (missing.length) {
-    const { data: ps } = await supabase.from('profiles').select('user_id,username,display_name').in('user_id', missing)
+    const { data: ps } = await supabase.from('profiles').select(PROFILE_COLS).in('user_id', missing)
     for (const p of (ps || []) as Profile[]) known.set(p.user_id, toPerson(p))
   }
   setSocial({

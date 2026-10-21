@@ -41,7 +41,7 @@ export function FriendsCard() {
     <button className="card" onClick={() => nav('/friends')} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 14, textAlign: 'left', width: '100%' }}>
       {friends.length ? (
         <div style={{ display: 'flex', flex: 'none' }}>
-          {friends.slice(0, 3).map((f) => <Avatar key={f.id} name={f.name} size={36} style={{ marginRight: -10, border: '2px solid var(--s1)' }} />)}
+          {friends.slice(0, 3).map((f) => <Avatar key={f.id} name={f.name} src={f.avatar} size={36} style={{ marginRight: -10, border: '2px solid var(--s1)' }} />)}
         </div>
       ) : (
         <div className="list-ico" style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(123,97,255,.18)', color: 'var(--vi)' }}><Users size={20} /></div>

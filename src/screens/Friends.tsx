@@ -10,7 +10,7 @@ import { useUI } from '../store/ui'
 function Row({ p, children }: { p: Person; children?: React.ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--line)' }}>
-      <Avatar name={p.name} size={42} />
+      <Avatar name={p.name} src={p.avatar} size={42} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="ellipsis" style={{ font: '600 15px var(--sans)' }}>{p.name}</div>
         <div className="ellipsis mono" style={{ fontSize: 12, color: 'var(--tx3)', marginTop: 2 }}>@{p.username}</div>

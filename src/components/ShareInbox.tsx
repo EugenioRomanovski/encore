@@ -17,7 +17,7 @@ export function ShareInbox({ kind }: { kind: 'memory' | 'event' }) {
         <div key={s.id} style={{ padding: 1.5, borderRadius: 22, background: 'linear-gradient(110deg,#FF2E88,#FF8A2B)', boxShadow: '0 14px 34px -18px rgba(255,46,136,.8)' }}>
           <div style={{ borderRadius: 20.5, background: 'var(--s1)', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Avatar name={s.from.name} size={34} />
+              <Avatar name={s.from.name} src={s.from.avatar} size={34} />
               <div style={{ flex: 1, minWidth: 0, font: '500 13px/1.35 var(--sans)', color: 'var(--tx2)' }}>
                 <b style={{ color: 'var(--tx)' }}>{s.from.name}</b> <span className="mono" style={{ fontSize: 12 }}>@{s.from.username}</span>
                 <div>{kind === 'memory' ? 'отметил(а) вас на концерте' : 'зовёт вас на концерт'}</div>

@@ -23,10 +23,10 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className={'toggle' + (on ? ' on' : '')} onClick={() => onChange(!on)} />
 }
 
-export function Avatar({ name, size = 36, style }: { name: string; size?: number; style?: CSSProperties }) {
+export function Avatar({ name, src, size = 36, style }: { name: string; src?: string | null; size?: number; style?: CSSProperties }) {
   return (
-    <div className="avatar" style={{ width: size, height: size, background: personColor(name), fontSize: size * 0.34, ...style }}>
-      {initials(name)}
+    <div className="avatar" style={{ width: size, height: size, background: personColor(name), fontSize: size * 0.34, overflow: 'hidden', ...style }}>
+      {src ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : initials(name)}
     </div>
   )
 }

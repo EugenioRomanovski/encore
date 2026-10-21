@@ -149,7 +149,7 @@ export default function EventDetail() {
             <Label>С кем идёте</Label>
             <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ display: 'flex' }}>
-                {e.friends.slice(0, 4).map((f) => <Avatar key={f.id} name={f.name} style={{ marginRight: -8, border: '2px solid var(--s1)' }} />)}
+                {e.friends.slice(0, 4).map((f) => <Avatar key={f.id} name={f.name} src={f.avatar} style={{ marginRight: -8, border: '2px solid var(--s1)' }} />)}
               </div>
               <div className="ellipsis" style={{ flex: 1, marginLeft: 8, font: '500 14px var(--sans)', color: 'var(--tx2)' }}>{e.friends.map((f) => f.name).join(', ')}</div>
             </div>

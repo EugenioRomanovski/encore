@@ -9,7 +9,10 @@ import { initials } from '../lib/palette'
 import { useUI } from '../store/ui'
 import { AccountCard } from '../components/AccountCard'
 import { FriendsCard } from '../components/FriendsCard'
-import { pushDisplayName, useSocial } from '../lib/social'
+import { pushDisplayName, removeAvatar, setAvatar, useMyAvatar, useSocial } from '../lib/social'
+import { squareImage } from '../lib/media'
+import { useState } from 'react'
+import { Camera, ImagePlus } from 'lucide-react'
 import { signOutAndWipe, useSync } from '../lib/sync'
 
 export default function Profile() {
@@ -33,6 +36,34 @@ export default function Profile() {
   }, [])
 
   const username = useSocial((s) => s.profile?.username)
+  const avatar = useMyAvatar()
+  const [avatarSheet, setAvatarSheet] = useState(false)
+
+  const pickAvatar = async () => {
+    setAvatarSheet(false)
+    const [f] = await pickFiles('image/*')
+    if (!f) return
+    setBusy('Сохраняем фото…')
+    try {
+      await setAvatar(await squareImage(f))
+      say('Фото профиля обновлено')
+    } catch (e) {
+      console.warn(e)
+      say('Фото сохранено на устройстве — в аккаунт загрузим при следующей синхронизации')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const dropAvatar = async () => {
+    setAvatarSheet(false)
+    try {
+      await removeAvatar()
+      say('Фото удалено')
+    } catch {
+      say('Нет связи — попробуйте ещё раз')
+    }
+  }
 
   const editName = () => {
     const n = prompt('Как вас зовут?', name)
@@ -89,9 +120,12 @@ export default function Profile() {
     <div className="screen with-tabs">
       <div style={{ padding: 'calc(var(--sat) + 20px) 20px 0', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button onClick={editName} aria-label="Изменить имя" style={{ width: 68, height: 68, borderRadius: 34, padding: 3, background: 'linear-gradient(135deg,#FF2E88,#FF8A2B)', flex: 'none' }}>
-            <div className="display" style={{ width: '100%', height: '100%', borderRadius: 31, background: 'var(--s2)', border: '2px solid var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
-              {name ? initials(name) : '★'}
+          <button onClick={() => setAvatarSheet(true)} aria-label="Фото профиля" style={{ position: 'relative', width: 72, height: 72, borderRadius: 36, padding: 3, background: 'linear-gradient(135deg,#FF2E88,#FF8A2B)', flex: 'none' }}>
+            <div className="display" style={{ width: '100%', height: '100%', borderRadius: 33, background: 'var(--s2)', border: '2px solid var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, overflow: 'hidden' }}>
+              {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name ? initials(name) : '★'}
+            </div>
+            <div style={{ position: 'absolute', right: -2, bottom: -2, width: 26, height: 26, borderRadius: 13, background: 'var(--s1)', border: '2px solid var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx)' }}>
+              <Camera size={13} />
             </div>
           </button>
           <button onClick={editName} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
@@ -209,6 +243,31 @@ export default function Profile() {
           <div className="mono" style={{ textAlign: 'center', fontSize: 10, fontWeight: 500, letterSpacing: '.16em', color: 'var(--tx3)', padding: '14px 0 0' }}>ENCORE 0.1</div>
         </div>
       </div>
+      {avatarSheet && (
+        <>
+          <div className="backdrop" onClick={() => setAvatarSheet(false)} />
+          <div className="sheet fixed-col" role="dialog" aria-label="Фото профиля">
+            <div className="sheet-grip" />
+            <div className="sheet-title" style={{ padding: '0 4px 14px' }}>Фото профиля</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button className="sheet-row" onClick={pickAvatar}>
+                <div className="sheet-ico" style={{ background: 'linear-gradient(135deg,#FF2E88,#FF8A2B)' }}><ImagePlus size={22} /></div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ font: '700 16px var(--sans)' }}>{avatar ? 'Выбрать другое фото' : 'Выбрать фото'}</div>
+                  <div style={{ font: '400 13px var(--sans)', color: 'var(--tx2)', marginTop: 2 }}>Из галереи или с камеры</div>
+                </div>
+              </button>
+              {avatar && (
+                <button className="sheet-row" onClick={dropAvatar}>
+                  <div className="sheet-ico" style={{ background: 'rgba(255,90,95,.16)', color: 'var(--danger)' }}><Trash2 size={22} /></div>
+                  <div style={{ flex: 1, font: '700 16px var(--sans)', color: 'var(--danger)' }}>Удалить фото</div>
+                </button>
+              )}
+              <button className="btn btn-secondary" style={{ background: 'var(--s2)', marginTop: 4 }} onClick={() => setAvatarSheet(false)}>Отмена</button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

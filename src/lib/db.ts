@@ -17,6 +17,7 @@ export interface FriendRef {
   id: string
   username: string
   name: string
+  avatar?: string
 }
 
 /** Set when a record was created from a friend's shared card (so it is not shared back to them). */
