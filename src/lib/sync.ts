@@ -312,8 +312,9 @@ export function initSync() {
 
 // ---------- auth ----------
 
-export async function sendCode(email: string) {
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin } })
+/** Email a one-time code. `signup` creates the account if needed; sign-in only works for existing accounts. */
+export async function sendCode(email: string, signup: boolean) {
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: signup, emailRedirectTo: location.origin } })
   if (error) throw error
 }
 

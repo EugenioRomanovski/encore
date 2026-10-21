@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Cloud, CloudOff, LogOut, RefreshCw } from 'lucide-react'
+import { Cloud, CloudOff, LogOut, RefreshCw } from 'lucide-react'
 import { signOut, syncNow, useSync } from '../lib/sync'
 import { pl } from '../lib/format'
 import { Spinner } from './ui'
@@ -31,14 +31,19 @@ export function AccountCard() {
 
   if (!user) {
     return (
-      <button className="card" onClick={() => nav('/account')} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 14, textAlign: 'left', width: '100%' }}>
-        <div style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, background: 'var(--grad2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Cloud size={22} /></div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ font: '700 15px var(--sans)' }}>Войти и включить синхронизацию</div>
-          <div style={{ font: '400 13px/1.4 var(--sans)', color: 'var(--tx2)', marginTop: 2 }}>Концерты, фото и билеты — в облаке и на всех устройствах</div>
+      <div className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, flex: 'none', borderRadius: 14, background: 'var(--grad2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Cloud size={22} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ font: '700 15px var(--sans)' }}>Синхронизация выключена</div>
+            <div style={{ font: '400 13px/1.4 var(--sans)', color: 'var(--tx2)', marginTop: 2 }}>С аккаунтом концерты, фото и билеты хранятся в облаке и есть на всех устройствах</div>
+          </div>
         </div>
-        <ChevronRight size={20} color="var(--tx3)" />
-      </button>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm" style={{ width: '100%', background: 'var(--s2)' }} onClick={() => nav('/account')}>Войти</button>
+          <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => nav('/account?mode=signup')}>Зарегистрироваться</button>
+        </div>
+      </div>
     )
   }
 

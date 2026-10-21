@@ -168,7 +168,7 @@ export default function Profile() {
             </div>
             <button className="list-row" onClick={doExport}>
               <div className="list-ico" style={{ background: 'rgba(123,97,255,.18)', color: 'var(--vi)' }}><Download size={18} /></div>
-              <div style={{ flex: 1 }}><div className="list-title">Резервная копия</div><div className="list-sub">Архив .zip: фото, видео, билеты и записи</div></div>
+              <div style={{ flex: 1 }}><div className="list-title">Резервная копия</div><div className="list-sub">Файл .zip на этом устройстве: фото, видео, билеты</div></div>
               <ChevronRight size={20} color="var(--tx3)" />
             </button>
             <button className="list-row" onClick={doImport}>
@@ -191,8 +191,8 @@ export default function Profile() {
           </div>
           <div className="hint" style={{ padding: '6px 4px 0' }}>
             {signedIn
-              ? 'Данные хранятся на устройстве и синхронизируются с облаком. Демо-данные в облако не попадают.'
-              : 'Без аккаунта всё хранится только на этом устройстве. Войдите или делайте резервную копию, чтобы не потерять фото и билеты.'}
+              ? 'Концерты синхронизируются с облаком (кроме демо-данных). Резервная копия — отдельный файл .zip: он сохраняется только на этом устройстве, в облако не попадает.'
+              : 'Без аккаунта концерты хранятся только на этом устройстве. Резервная копия .zip тоже сохраняется только на нём — перенесите файл в iCloud Drive или на компьютер, чтобы не потерять его вместе с телефоном.'}
           </div>
           <div className="mono" style={{ textAlign: 'center', fontSize: 10, fontWeight: 500, letterSpacing: '.16em', color: 'var(--tx3)', padding: '14px 0 0' }}>ENCORE 0.1</div>
         </div>

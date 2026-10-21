@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Cloud, Mail } from 'lucide-react'
 import { sendCode, useSync, verifyCode } from '../lib/sync'
 import { Spinner } from '../components/ui'
@@ -9,6 +9,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function authError(e: unknown) {
   const m = String((e as Error)?.message || e)
+  if (/signups? not allowed|user not found/i.test(m)) return 'NO_ACCOUNT'
   if (/rate limit|too many|security purposes/i.test(m)) return 'Слишком много попыток. Подождите минуту и попробуйте снова.'
   if (/expired|invalid|token/i.test(m)) return 'Код не подошёл или устарел. Проверьте письмо или запросите новый.'
   if (/fetch|network|Load failed/i.test(m)) return 'Нет связи с сервером. Проверьте интернет.'
@@ -19,6 +20,12 @@ export default function Account() {
   const nav = useNavigate()
   const say = useUI((s) => s.say)
   const user = useSync((s) => s.user)
+  const [params, setParams] = useSearchParams()
+  const signup = params.get('mode') === 'signup'
+  const setSignup = (v: boolean) => {
+    setParams(v ? { mode: 'signup' } : {}, { replace: true })
+    setError(null)
+  }
   const [email, setEmail] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [code, setCode] = useState('')
@@ -46,7 +53,7 @@ export default function Account() {
     setBusy(true)
     setError(null)
     try {
-      await sendCode(e)
+      await sendCode(e, signup)
       setEmail(e)
       setStep('code')
       setCode('')
@@ -90,24 +97,38 @@ export default function Account() {
         </div>
         {step === 'email' ? (
           <>
+            <div className="seg">
+              <div className="seg-thumb" style={{ width: 'calc(50% - 3px)', left: signup ? '50%' : 3 }} />
+              <button className={signup ? '' : 'on'} onClick={() => setSignup(false)}>Вход</button>
+              <button className={signup ? 'on' : ''} onClick={() => setSignup(true)}>Регистрация</button>
+            </div>
             <div>
-              <div style={{ font: '800 26px/1.15 var(--sans)', letterSpacing: '-.025em' }}>Концерты на всех устройствах</div>
+              <div style={{ font: '800 26px/1.15 var(--sans)', letterSpacing: '-.025em' }}>{signup ? 'Создайте аккаунт' : 'С возвращением'}</div>
               <div style={{ font: '400 15px/1.5 var(--sans)', color: 'var(--tx2)', marginTop: 8 }}>
-                Войдите по почте — воспоминания, планы, фото и билеты будут сохраняться в облаке и появятся на любом телефоне, где вы войдёте. Без пароля: пришлём код.
+                {signup
+                  ? 'Нужна только почта — без пароля. Воспоминания, планы, фото и билеты будут сохраняться в облаке и появятся на любом телефоне, где вы войдёте.'
+                  : 'Введите почту, с которой регистрировались, — пришлём код для входа.'}
               </div>
             </div>
             <div className="field">
               <Mail size={20} />
               <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="you@example.com" enterKeyHint="send" />
             </div>
-            {error && <div style={{ font: '500 14px/1.4 var(--sans)', color: 'var(--danger)' }}>{error}</div>}
-            <button className="btn btn-primary" onClick={send} disabled={busy || !email.trim()}>{busy ? <Spinner /> : 'Получить код'}</button>
-            <div className="hint">Входить не обязательно: без аккаунта всё хранится только на этом устройстве. Концерты, которые уже есть здесь, после входа загрузятся в аккаунт.</div>
+            {error === 'NO_ACCOUNT' ? (
+              <div style={{ font: '500 14px/1.4 var(--sans)', color: 'var(--danger)' }}>
+                Аккаунта с этой почтой нет.{' '}
+                <button className="link" style={{ fontSize: 14 }} onClick={() => setSignup(true)}>Зарегистрироваться</button>
+              </div>
+            ) : (
+              error && <div style={{ font: '500 14px/1.4 var(--sans)', color: 'var(--danger)' }}>{error}</div>
+            )}
+            <button className="btn btn-primary" onClick={send} disabled={busy || !email.trim()}>{busy ? <Spinner /> : signup ? 'Зарегистрироваться' : 'Получить код'}</button>
+            <div className="hint">Аккаунт не обязателен: без него всё хранится только на этом устройстве. Концерты, которые уже есть здесь, после входа загрузятся в аккаунт.</div>
           </>
         ) : (
           <>
             <div>
-              <div style={{ font: '800 26px/1.15 var(--sans)', letterSpacing: '-.025em' }}>Введите код из письма</div>
+              <div style={{ font: '800 26px/1.15 var(--sans)', letterSpacing: '-.025em' }}>{signup ? 'Подтвердите почту' : 'Введите код из письма'}</div>
               <div style={{ font: '400 15px/1.5 var(--sans)', color: 'var(--tx2)', marginTop: 8 }}>Отправили на <b style={{ color: 'var(--tx)' }}>{email}</b>. Письмо может попасть в «Спам».</div>
             </div>
             <input
@@ -126,7 +147,7 @@ export default function Account() {
               style={{ height: 72, borderRadius: 18, background: 'var(--s1)', border: '1px solid var(--line)', outline: 'none', textAlign: 'center', fontSize: 40, letterSpacing: '.3em', color: 'var(--tx)', padding: '0 0 0 .3em' }}
             />
             {error && <div style={{ font: '500 14px/1.4 var(--sans)', color: 'var(--danger)' }}>{error}</div>}
-            <button className="btn btn-primary" onClick={() => verify()} disabled={busy || code.length < 6}>{busy ? <Spinner /> : 'Войти'}</button>
+            <button className="btn btn-primary" onClick={() => verify()} disabled={busy || code.length < 6}>{busy ? <Spinner /> : signup ? 'Создать аккаунт' : 'Войти'}</button>
             <button className="link" style={{ alignSelf: 'center', opacity: cooldown ? 0.5 : 1 }} disabled={!!cooldown || busy} onClick={send}>
               {cooldown ? `Отправить ещё раз через ${cooldown} с` : 'Отправить код ещё раз'}
             </button>
