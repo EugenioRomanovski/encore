@@ -6,6 +6,8 @@ import { Spinner } from '../components/ui'
 import { useUI } from '../store/ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Supabase project setting "Email OTP length" (currently 8); the form auto-submits at exactly this length
+const CODE_LENGTH = 8
 
 function authError(e: unknown) {
   const m = String((e as Error)?.message || e)
@@ -68,7 +70,7 @@ export default function Account() {
 
   const verify = async (value = code) => {
     const token = value.replace(/\D/g, '')
-    if (token.length < 6) return
+    if (token.length < CODE_LENGTH) return
     setBusy(true)
     setError(null)
     try {
@@ -135,19 +137,19 @@ export default function Account() {
               ref={codeInput}
               value={code}
               onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, '').slice(0, 10)
+                const v = e.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH)
                 setCode(v)
-                if (v.length === 6 || v.length === 8) verify(v)
+                if (v.length === CODE_LENGTH) verify(v)
               }}
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="••••••"
+              placeholder={'•'.repeat(CODE_LENGTH)}
               aria-label="Код из письма"
               className="display"
               style={{ height: 72, borderRadius: 18, background: 'var(--s1)', border: '1px solid var(--line)', outline: 'none', textAlign: 'center', fontSize: 40, letterSpacing: '.3em', color: 'var(--tx)', padding: '0 0 0 .3em' }}
             />
             {error && <div style={{ font: '500 14px/1.4 var(--sans)', color: 'var(--danger)' }}>{error}</div>}
-            <button className="btn btn-primary" onClick={() => verify()} disabled={busy || code.length < 6}>{busy ? <Spinner /> : signup ? 'Создать аккаунт' : 'Войти'}</button>
+            <button className="btn btn-primary" onClick={() => verify()} disabled={busy || code.length < CODE_LENGTH}>{busy ? <Spinner /> : signup ? 'Создать аккаунт' : 'Войти'}</button>
             <button className="link" style={{ alignSelf: 'center', opacity: cooldown ? 0.5 : 1 }} disabled={!!cooldown || busy} onClick={send}>
               {cooldown ? `Отправить ещё раз через ${cooldown} с` : 'Отправить код ещё раз'}
             </button>
