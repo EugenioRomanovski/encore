@@ -8,6 +8,8 @@ import { pickFiles } from '../lib/media'
 import { initials } from '../lib/palette'
 import { useUI } from '../store/ui'
 import { AccountCard } from '../components/AccountCard'
+import { FriendsCard } from '../components/FriendsCard'
+import { pushDisplayName, useSocial } from '../lib/social'
 import { signOutAndWipe, useSync } from '../lib/sync'
 
 export default function Profile() {
@@ -30,9 +32,13 @@ export default function Profile() {
     return { total: ms.length, artists, venues, since, demo: !!demo, own: await hasOwnConcerts() }
   }, [])
 
+  const username = useSocial((s) => s.profile?.username)
+
   const editName = () => {
     const n = prompt('Как вас зовут?', name)
-    if (n !== null) setName(n.trim())
+    if (n === null) return
+    setName(n.trim())
+    pushDisplayName(n.trim()).catch(() => {})
   }
 
   const doExport = async () => {
@@ -90,6 +96,7 @@ export default function Profile() {
           </button>
           <button onClick={editName} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
             <div className="ellipsis" style={{ font: '800 24px/1.1 var(--sans)', letterSpacing: '-.02em', color: name ? 'var(--tx)' : 'var(--tx3)' }}>{name || 'Как вас зовут?'}</div>
+            {username && <div className="mono ellipsis" style={{ fontSize: 13, color: 'var(--mag)', marginTop: 4 }}>@{username}</div>}
             <div className="mono-label" style={{ letterSpacing: '.12em', marginTop: 5 }}>{stats?.since ? `НА КОНЦЕРТАХ С ${stats.since}` : 'ДОБАВЬТЕ ПЕРВЫЙ КОНЦЕРТ'}</div>
           </button>
           <button className="icon-btn" aria-label="Изменить имя" onClick={editName}><Pencil size={18} /></button>
@@ -146,6 +153,11 @@ export default function Profile() {
             </div>
           </div>
         )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="mono-label" style={{ padding: '4px 4px 0' }}>Друзья</span>
+          <FriendsCard />
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="mono-label" style={{ padding: '4px 4px 0' }}>Аккаунт</span>

@@ -5,7 +5,7 @@ import { db, deleteEvent } from '../lib/db'
 import { dayNum, daysUntil, dow, monShort, relDays, stampDow, year } from '../lib/format'
 import { addToCalendar } from '../lib/ics'
 import { Cover } from '../components/Cover'
-import { Label } from '../components/ui'
+import { Avatar, Label } from '../components/ui'
 import { Menu } from '../components/Menu'
 import { AttachTicket } from '../components/TicketStub'
 import { useUI } from '../store/ui'
@@ -142,6 +142,18 @@ export default function EventDetail() {
           </button>
         ) : (
           <AttachTicket label="Привязать билет" onClick={() => openSheet('ticket', { eventId: e.id })} />
+        )}
+
+        {e.friends && e.friends.length > 0 && (
+          <div className="section" style={{ gap: 10 }}>
+            <Label>С кем идёте</Label>
+            <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex' }}>
+                {e.friends.slice(0, 4).map((f) => <Avatar key={f.id} name={f.name} style={{ marginRight: -8, border: '2px solid var(--s1)' }} />)}
+              </div>
+              <div className="ellipsis" style={{ flex: 1, marginLeft: 8, font: '500 14px var(--sans)', color: 'var(--tx2)' }}>{e.friends.map((f) => f.name).join(', ')}</div>
+            </div>
+          </div>
         )}
 
         <div className="section" style={{ gap: 10 }}>

@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowRight, CalendarDays, ChevronLeft, Clock, ImagePlus, MapPin, Mic, Play, Sparkles, X } from 'lucide-react'
-import { db, deleteMedia, uid, type Media, type Memory } from '../lib/db'
+import { db, deleteMedia, uid, type FriendRef, type Media, type Memory, type ShareOrigin } from '../lib/db'
 import { prepareMedia, pickFiles } from '../lib/media'
 import { RATING_LABELS, longDate, toHM, toISODate, todayISO } from '../lib/format'
 import { paletteFor } from '../lib/palette'
 import { useBlobUrl, useMediaUrl } from '../lib/hooks'
 import { useSuggestions } from '../lib/suggest'
 import { ChipsInput } from '../components/ChipsInput'
+import { FriendPicker } from '../components/FriendPicker'
+import { findShare, setShareStatus } from '../lib/social'
 import { Avatar, Label, Spinner, Stars } from '../components/ui'
 import { useUI } from '../store/ui'
 
@@ -63,6 +65,7 @@ export default function MemoryForm() {
   const { id } = useParams()
   const [params] = useSearchParams()
   const fromEvent = params.get('fromEvent')
+  const shareId = params.get('share')
   const nav = useNavigate()
   const { say, setBusy } = useUI()
   const sugg = useSuggestions()
@@ -86,6 +89,8 @@ export default function MemoryForm() {
   const [people, setPeople] = useState<string[]>([])
   const [genres, setGenres] = useState<string[]>([])
   const [setlist, setSetlist] = useState('')
+  const [friends, setFriends] = useState<FriendRef[]>([])
+  const [origin, setOrigin] = useState<ShareOrigin | undefined>()
 
   useEffect(() => {
     ;(async () => {
@@ -97,16 +102,29 @@ export default function MemoryForm() {
         setArtist(m.artist); setTour(m.tour || ''); setVenue(m.venue); setDate(m.date); setTime(m.time || '')
         setRating(m.rating); setNotes(m.notes); setPeople(m.people); setGenres(m.genres)
         setSetlist(setlistToText(m.setlist, m.encoreAt))
+        setFriends(m.friends || []); setOrigin(m.sharedFrom)
       } else if (fromEvent) {
         const e = await db.events.get(fromEvent)
         if (e) {
           setArtist(e.artist); setTour(e.tour || ''); setVenue(e.venue); setDate(e.date); setTime(e.show || '')
           setNotes(e.notes)
+          setFriends(e.friends || []); setOrigin(e.sharedFrom)
+        }
+      } else if (shareId) {
+        // a friend tagged us on this concert: start from their card, with them as company
+        const sh = findShare(shareId)
+        if (sh) {
+          const p = sh.payload
+          setArtist(p.artist); setTour(p.tour || ''); setVenue(p.venue); setDate(p.date); setTime(p.time || p.show || '')
+          setGenres(p.genres || [])
+          if (p.setlist?.length) setSetlist(setlistToText(p.setlist, p.encoreAt ?? null))
+          setFriends([{ id: sh.from.id, username: sh.from.username, name: sh.from.name }])
+          setOrigin({ shareId: sh.id, userId: sh.from.id, username: sh.from.username })
         }
       }
       setLoaded(true)
     })()
-  }, [id, fromEvent, editing, nav])
+  }, [id, fromEvent, shareId, editing, nav])
 
   const fresh = items.filter((i) => i.media)
   const taken = useMemo(() => fresh.map((i) => i.media!.takenAt).filter(Boolean).sort() as number[], [fresh])
@@ -169,6 +187,8 @@ export default function MemoryForm() {
         encoreAt,
         mediaIds: items.map((i) => i.id),
         coverId: items[0]?.id,
+        friends: friends.length ? friends : undefined,
+        sharedFrom: origin,
         palette: orig?.palette ?? paletteFor(artist),
         createdAt: orig?.createdAt || now,
         updatedAt: now,
@@ -190,7 +210,8 @@ export default function MemoryForm() {
           }
         }
       })
-      say(editing ? 'Изменения сохранены' : 'Воспоминание сохранено')
+      if (shareId && origin) setShareStatus(shareId, 'added')
+      say(editing ? 'Изменения сохранены' : friends.length && !editing ? 'Воспоминание сохранено — друзья увидят концерт у себя' : 'Воспоминание сохранено')
       nav(`/memory/${mem.id}`, { replace: true })
     } catch (e) {
       console.error(e)
@@ -339,6 +360,7 @@ export default function MemoryForm() {
 
         <div className="section" style={{ gap: 8 }}>
           <Label>С кем ходили</Label>
+          <FriendPicker value={friends} onChange={setFriends} />
           <ChipsInput values={people} onChange={setPeople} placeholder="Имя друга" suggestions={sugg.people} render={(v) => <><Avatar name={v} size={26} /><span>{v}</span></>} />
         </div>
 

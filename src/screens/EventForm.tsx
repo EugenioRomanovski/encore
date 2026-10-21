@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { CalendarDays, DoorOpen, ImagePlus, MapPin, Mic, Music, X } from 'lucide-react'
-import { db, deleteMedia, uid, type PlannedEvent } from '../lib/db'
+import { db, deleteMedia, uid, type FriendRef, type PlannedEvent, type ShareOrigin } from '../lib/db'
 import { pickFiles, saveImageAsMedia } from '../lib/media'
 import { todayISO } from '../lib/format'
 import { paletteFor } from '../lib/palette'
 import { useSuggestions } from '../lib/suggest'
 import { Cover } from '../components/Cover'
 import { Label, Spinner } from '../components/ui'
+import { FriendPicker } from '../components/FriendPicker'
+import { findShare, setShareStatus } from '../lib/social'
+import { useSync } from '../lib/sync'
 import { useUI } from '../store/ui'
 
 export default function EventForm() {
@@ -15,6 +18,8 @@ export default function EventForm() {
   const nav = useNavigate()
   const loc = useLocation()
   const returnTo = (loc.state as { returnTo?: string } | null)?.returnTo
+  const [params] = useSearchParams()
+  const shareId = params.get('share')
   const { say, setBusy } = useUI()
   const sugg = useSuggestions()
   const editing = !!id
@@ -30,16 +35,30 @@ export default function EventForm() {
   const [coverId, setCoverId] = useState<string | undefined>()
   const [newCovers, setNewCovers] = useState<string[]>([])
   const [loadingCover, setLoadingCover] = useState(false)
+  const [friends, setFriends] = useState<FriendRef[]>([])
+  const [origin, setOrigin] = useState<ShareOrigin | undefined>()
 
   useEffect(() => {
-    if (!editing) return
+    if (!editing) {
+      // a friend invited us: start from their plan, with them as company
+      const sh = findShare(shareId)
+      if (sh) {
+        const p = sh.payload
+        setArtist(p.artist); setTour(p.tour || ''); setVenue(p.venue); setDate(p.date)
+        setDoors(p.doors || ''); setShow(p.show || '')
+        setFriends([{ id: sh.from.id, username: sh.from.username, name: sh.from.name }])
+        setOrigin({ shareId: sh.id, userId: sh.from.id, username: sh.from.username })
+      }
+      return
+    }
     db.events.get(id!).then((e) => {
       if (!e) return nav('/upcoming', { replace: true })
       setOrig(e)
       setArtist(e.artist); setTour(e.tour || ''); setVenue(e.venue); setDate(e.date)
       setDoors(e.doors || ''); setShow(e.show || ''); setNotes(e.notes); setCoverId(e.coverId)
+      setFriends(e.friends || []); setOrigin(e.sharedFrom)
     })
-  }, [id, editing, nav])
+  }, [id, editing, shareId, nav])
 
   const pickCover = async () => {
     const [f] = await pickFiles('image/*')
@@ -76,6 +95,8 @@ export default function EventForm() {
         show: show || undefined,
         notes: notes.trim(),
         coverId,
+        friends: friends.length ? friends : undefined,
+        sharedFrom: origin,
         palette: orig?.palette ?? paletteFor(artist),
         createdAt: orig?.createdAt || Date.now(),
       }
@@ -85,7 +106,8 @@ export default function EventForm() {
         await deleteMedia(unused)
         await db.tickets.where('eventId').equals(e.id).modify({ artist: e.artist, venue: e.venue, date: e.date, time: e.show, tour: e.tour })
       })
-      say(editing ? 'Изменения сохранены' : 'Концерт запланирован')
+      if (shareId && origin) setShareStatus(shareId, 'added')
+      say(editing ? 'Изменения сохранены' : friends.length ? 'Концерт запланирован — друзья увидят его у себя' : 'Концерт запланирован')
       if (returnTo) nav(returnTo, { replace: true, state: { selectEventId: e.id } })
       else nav(`/event/${e.id}`, { replace: true })
     } finally {
@@ -143,12 +165,24 @@ export default function EventForm() {
             <div className="field"><Music size={20} /><input type="time" value={show} onChange={(e) => setShow(e.target.value)} /></div>
           </div>
         </div>
+        <FriendsSection value={friends} onChange={setFriends} />
         <div className="section" style={{ gap: 8 }}>
           <Label>Заметки</Label>
           <textarea className="textarea" rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Где встречаемся, что взять с собой…" />
         </div>
         <button className="btn btn-primary" onClick={save} disabled={!valid}>{editing ? 'Сохранить изменения' : 'Запланировать'}</button>
       </div>
+    </div>
+  )
+}
+
+function FriendsSection({ value, onChange }: { value: FriendRef[]; onChange: (v: FriendRef[]) => void }) {
+  const signedIn = useSync((s) => !!s.user)
+  if (!signedIn) return null
+  return (
+    <div className="section" style={{ gap: 8 }}>
+      <Label>С кем идёте</Label>
+      <FriendPicker value={value} onChange={onChange} />
     </div>
   )
 }

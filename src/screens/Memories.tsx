@@ -8,6 +8,7 @@ import { glow } from '../lib/palette'
 import { hasOwnConcerts, loadDemo } from '../lib/demo'
 import { Cover } from '../components/Cover'
 import { Stars, TicketArt } from '../components/ui'
+import { ShareInbox } from '../components/ShareInbox'
 
 function matches(m: Memory, q: string) {
   const s = q.toLowerCase().replace(/ё/g, 'е')
@@ -90,6 +91,9 @@ export default function Memories() {
         <div className="hdr">
           <div className="hdr-row"><div className="hdr-title">Воспоминания</div></div>
         </div>
+        <div style={{ padding: '6px 16px 0' }}>
+          <ShareInbox kind="memory" />
+        </div>
         <div className="empty">
           <TicketArt title="ENCORE" sub="ВАШ АРХИВ КОНЦЕРТОВ" />
           <div className="empty-title">Здесь будут ваши концерты</div>
@@ -131,6 +135,11 @@ export default function Memories() {
         </div>
       </div>
       <div style={{ padding: '0 16px' }}>
+        {!q && (
+          <div style={{ paddingTop: 10 }}>
+            <ShareInbox kind="memory" />
+          </div>
+        )}
         {groups.map((g) => (
           <div key={g.year}>
             <div style={{ position: 'sticky', top: hdrH, zIndex: 3, display: 'flex', alignItems: 'center', gap: 12, padding: '14px 4px 12px', background: 'var(--bg)' }}>

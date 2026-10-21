@@ -12,6 +12,20 @@ export interface Media {
   createdAt: number
 }
 
+/** A friend (Encore account) tagged on a concert — a snapshot, so it shows offline. */
+export interface FriendRef {
+  id: string
+  username: string
+  name: string
+}
+
+/** Set when a record was created from a friend's shared card (so it is not shared back to them). */
+export interface ShareOrigin {
+  shareId: string
+  userId: string
+  username: string
+}
+
 export interface Memory {
   id: string
   artist: string
@@ -30,6 +44,8 @@ export interface Memory {
   encoreAt: number | null
   mediaIds: string[]
   coverId?: string
+  friends?: FriendRef[]
+  sharedFrom?: ShareOrigin
   palette: number
   createdAt: number
   updatedAt: number
@@ -45,6 +61,8 @@ export interface PlannedEvent {
   show?: string
   notes: string
   coverId?: string
+  friends?: FriendRef[]
+  sharedFrom?: ShareOrigin
   palette: number
   createdAt: number
 }

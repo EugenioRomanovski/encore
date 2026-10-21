@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Cloud, CloudOff, LogOut, RefreshCw } from 'lucide-react'
+import { AtSign, ChevronRight, Cloud, CloudOff, LogOut, RefreshCw } from 'lucide-react'
+import { useSocial } from '../lib/social'
 import { signOut, syncNow, useSync } from '../lib/sync'
 import { pl } from '../lib/format'
 import { Spinner } from './ui'
@@ -21,6 +22,7 @@ export function AccountCard() {
   const nav = useNavigate()
   const say = useUI((s) => s.say)
   const { ready, user, status, lastSync, pending, downloading, error } = useSync()
+  const profile = useSocial((s) => s.profile)
   const [, tick] = useState(0)
   useEffect(() => {
     const t = setInterval(() => tick((x) => x + 1), 30_000)
@@ -80,6 +82,14 @@ export function AccountCard() {
           {status === 'syncing' ? <Spinner dark /> : <RefreshCw size={19} />}
         </button>
       </div>
+      <button className="list-row" onClick={() => nav('/username')}>
+        <div className="list-ico" style={{ background: 'rgba(255,46,136,.16)', color: 'var(--mag)' }}><AtSign size={18} /></div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="list-title">Имя пользователя</div>
+          <div className="list-sub mono">{profile ? `@${profile.username}` : 'Не выбрано — друзья не смогут вас найти'}</div>
+        </div>
+        <ChevronRight size={20} color="var(--tx3)" />
+      </button>
       <button className="list-row" onClick={logout}>
         <div className="list-ico" style={{ background: 'var(--s2)', color: 'var(--tx2)' }}><LogOut size={18} /></div>
         <div style={{ flex: 1 }} className="list-title">Выйти из аккаунта</div>

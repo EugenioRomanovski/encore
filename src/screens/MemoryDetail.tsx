@@ -70,6 +70,8 @@ export default function MemoryDetail() {
   }
 
   const setlistMain = m.encoreAt === null ? m.setlist : m.setlist.slice(0, m.encoreAt)
+  // Encore friends first, then names typed by hand
+  const company = [...(m.friends || []).map((f) => f.name), ...m.people]
 
   return (
     <div className="screen" style={{ paddingBottom: 'calc(40px + var(--sab))' }}>
@@ -179,12 +181,12 @@ export default function MemoryDetail() {
           <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
             <span className="mono-label">С кем ходили</span>
             <div style={{ display: 'flex' }}>
-              {m.people.slice(0, 4).map((p) => <Avatar key={p} name={p} style={{ marginRight: -8, border: '2px solid var(--s1)' }} />)}
-              <button aria-label="Добавить" onClick={() => nav(`/memory/${m.id}/edit`)} style={{ width: 36, height: 36, borderRadius: 18, border: '1.5px dashed var(--line2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: m.people.length ? 14 : 0 }}>
+              {company.slice(0, 4).map((p, i) => <Avatar key={p + i} name={p} style={{ marginRight: -8, border: '2px solid var(--s1)' }} />)}
+              <button aria-label="Добавить" onClick={() => nav(`/memory/${m.id}/edit`)} style={{ width: 36, height: 36, borderRadius: 18, border: '1.5px dashed var(--line2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: company.length ? 14 : 0 }}>
                 <Plus size={18} color="var(--tx3)" />
               </button>
             </div>
-            <span className="ellipsis" style={{ font: '500 13px var(--sans)', color: 'var(--tx2)' }}>{m.people.length ? m.people.join(', ') : 'Пока никого'}</span>
+            <span className="ellipsis" style={{ font: '500 13px var(--sans)', color: 'var(--tx2)' }}>{company.length ? company.join(', ') : 'Пока никого'}</span>
           </div>
         </div>
 

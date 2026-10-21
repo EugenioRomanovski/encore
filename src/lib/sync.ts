@@ -1,6 +1,6 @@
 import { createClient, type User } from '@supabase/supabase-js'
 import { create } from 'zustand'
-import { db, enqueueAll, isDemoId, markRemote, outboxKey, setOutboxListener, type Media, type OutboxItem, type SyncedTable } from './db'
+import { db, enqueueAll, isDemoId, markRemote, outboxKey, setOutboxListener, type Media, type Memory, type OutboxItem, type PlannedEvent, type SyncedTable } from './db'
 
 /*
  * Cloud sync with Supabase.
@@ -102,6 +102,27 @@ async function upload(p: string, blob: Blob) {
   if (error) throw error
 }
 
+/** What a friend receives when tagged on a concert: the facts of the show, never photos or notes. */
+function sharePayload(kind: 'memory' | 'event', r: Memory | PlannedEvent) {
+  const base = { artist: r.artist, tour: r.tour, venue: r.venue, date: r.date }
+  if (kind === 'event') {
+    const e = r as PlannedEvent
+    return { ...base, doors: e.doors, show: e.show }
+  }
+  const m = r as Memory
+  return { ...base, time: m.time, setlist: m.setlist, encoreAt: m.encoreAt, genres: m.genres }
+}
+
+/** Send (or refresh) the concert card to tagged friends; the server skips anyone who isn't a friend. */
+async function shareWithFriends(item: OutboxItem, rec: Memory | PlannedEvent | undefined) {
+  if (!rec || (item.table !== 'memories' && item.table !== 'events')) return
+  const to = (rec.friends || []).map((f) => f.id).filter((id) => id !== rec.sharedFrom?.userId)
+  if (!to.length) return
+  const kind = item.table === 'memories' ? 'memory' : 'event'
+  const { error } = await supabase.rpc('share_concert', { p_to: to, p_kind: kind, p_source: rec.id, p_payload: sharePayload(kind, rec) })
+  if (error) throw error
+}
+
 /** Returns how many media files could not be uploaded (e.g. over the size limit). */
 async function push(uid: string): Promise<number> {
   const items = await db.outbox.orderBy('at').toArray()
@@ -135,6 +156,7 @@ async function push(uid: string): Promise<number> {
       continue
     }
     const rec = await db.table(item.table).get(item.id)
+    await shareWithFriends(item, rec)
     batch.push({ item, row: rec ? { kind, id: item.id, data: rec, deleted: false } : { kind, id: item.id, data: null, deleted: true } })
     if (batch.length >= 200) await flush()
   }
@@ -230,6 +252,10 @@ async function downloadMissing(uid: string) {
 
 // ---------- orchestration ----------
 
+// extra work after each sync (profile, friends, shared concerts) — registered by social.ts
+let afterSync: (uid: string) => Promise<void> = async () => {}
+export const setAfterSync = (fn: (uid: string) => Promise<void>) => (afterSync = fn)
+
 let running: Promise<void> | null = null
 let again = false
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -247,6 +273,7 @@ async function syncOnce() {
     const failed = await push(user.id)
     await pull(user.id)
     await downloadMissing(user.id)
+    await afterSync(user.id)
     const now = Date.now()
     ls.set(lastKey(user.id), String(now))
     set({ status: failed ? 'error' : 'idle', lastSync: now, error: failed ? `Не удалось загрузить файлов: ${failed}. Возможно, они слишком большие.` : null })

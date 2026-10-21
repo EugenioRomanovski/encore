@@ -6,6 +6,7 @@ import { dayNum, daysUntil, monShort, pl, plural, stampShort, todayISO } from '.
 import { hasOwnConcerts, loadDemo } from '../lib/demo'
 import { Cover } from '../components/Cover'
 import { TicketArt } from '../components/ui'
+import { ShareInbox } from '../components/ShareInbox'
 import { useUI } from '../store/ui'
 
 function useTicketEventIds() {
@@ -108,6 +109,10 @@ export default function Upcoming() {
             <button className="icon-btn" aria-label="Запланировать концерт" onClick={() => nav('/event/new')}><Plus size={22} /></button>
           </div>
         </div>
+      </div>
+
+      <div style={{ padding: '6px 16px 0' }}>
+        <ShareInbox kind="event" />
       </div>
 
       {events && events.length === 0 && (
