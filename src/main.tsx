@@ -11,6 +11,7 @@ import oswaldCyr from '@fontsource/oswald/files/oswald-cyrillic-700-normal.woff2
 import oswaldCyrExt from '@fontsource/oswald/files/oswald-cyrillic-ext-700-normal.woff2?url'
 import './styles/global.css'
 import App from './App'
+import { initSync } from './lib/sync'
 
 // Anton has no Cyrillic: Russian text in the display face falls back to bold Oswald.
 for (const [url, range] of [
@@ -21,6 +22,8 @@ for (const [url, range] of [
   document.fonts.add(f)
   f.load().catch(() => {})
 }
+
+initSync()
 
 if (navigator.storage?.persist) navigator.storage.persist().catch(() => {})
 

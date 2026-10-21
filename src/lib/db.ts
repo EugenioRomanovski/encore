@@ -83,6 +83,7 @@ class EncoreDB extends Dexie {
   memories!: Table<Memory, string>
   events!: Table<PlannedEvent, string>
   tickets!: Table<Ticket, string>
+  outbox!: Table<OutboxItem, string>
 
   constructor() {
     super('encore')
@@ -92,10 +93,77 @@ class EncoreDB extends Dexie {
       events: 'id, date',
       tickets: 'id, date, eventId, memoryId',
     })
+    this.version(2).stores({
+      outbox: 'key, at',
+    })
   }
 }
 
 export const db = new EncoreDB()
+
+// ---------- change tracking for cloud sync ----------
+
+export const SYNCED_TABLES = ['memories', 'events', 'tickets', 'media'] as const
+export type SyncedTable = (typeof SYNCED_TABLES)[number]
+
+/** A local change waiting to be pushed: the current row (or its absence) is what gets sent. */
+export interface OutboxItem {
+  key: string
+  table: SyncedTable
+  id: string
+  at: number
+}
+
+export const isDemoId = (id: string) => id.startsWith('demo-')
+export const outboxKey = (table: SyncedTable, id: string) => `${table}:${id}`
+
+type Tx = { on: (e: 'complete', fn: () => void) => void } & { __remote?: boolean; __changes?: Map<string, OutboxItem> }
+
+let outboxListener: () => void = () => {}
+export const setOutboxListener = (fn: () => void) => (outboxListener = fn)
+
+/** Mark a transaction as applying data from the cloud, so it isn't echoed back. */
+export const markRemote = (tx: unknown) => ((tx as Tx).__remote = true)
+
+function track(table: SyncedTable, id: unknown, tx: unknown) {
+  const t = tx as Tx
+  if (typeof id !== 'string' || isDemoId(id) || t.__remote) return
+  if (!t.__changes) {
+    const changes = new Map<string, OutboxItem>()
+    t.__changes = changes
+    // hooks can't write other tables mid-transaction; record the changes once it commits
+    t.on('complete', () => {
+      db.outbox.bulkPut([...changes.values()]).then(() => outboxListener(), () => {})
+    })
+  }
+  const key = outboxKey(table, id)
+  t.__changes.set(key, { key, table, id, at: Date.now() })
+}
+
+for (const table of SYNCED_TABLES) {
+  const tb = db.table(table)
+  tb.hook('creating', function (key, obj, tx) {
+    track(table, key ?? (obj as { id?: string }).id, tx)
+  })
+  tb.hook('updating', function (_mods, key, _obj, tx) {
+    track(table, key, tx)
+  })
+  tb.hook('deleting', function (key, _obj, tx) {
+    track(table, key, tx)
+  })
+}
+
+/** Queue every local (non-demo) row for upload — used when an account is first connected on this device. */
+export async function enqueueAll() {
+  const now = Date.now()
+  const items: OutboxItem[] = []
+  for (const table of SYNCED_TABLES) {
+    for (const id of (await db.table(table).toCollection().primaryKeys()) as string[]) {
+      if (!isDemoId(id)) items.push({ key: outboxKey(table, id), table, id, at: now })
+    }
+  }
+  await db.outbox.bulkPut(items)
+}
 
 export const uid = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -130,8 +198,10 @@ export async function deleteTicket(t: Ticket) {
   })
 }
 
+/** Clear everything on this device only — marked remote so the deletions are never pushed to the cloud. */
 export async function wipeAll() {
-  await db.transaction('rw', db.media, db.memories, db.events, db.tickets, async () => {
-    await Promise.all([db.media.clear(), db.memories.clear(), db.events.clear(), db.tickets.clear()])
+  await db.transaction('rw', [db.media, db.memories, db.events, db.tickets, db.outbox], async (tx) => {
+    markRemote(tx)
+    await Promise.all([db.media.clear(), db.memories.clear(), db.events.clear(), db.tickets.clear(), db.outbox.clear()])
   })
 }

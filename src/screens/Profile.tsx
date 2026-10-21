@@ -7,6 +7,8 @@ import { DEMO_MEMORIES, hasOwnConcerts, loadDemo, removeDemo } from '../lib/demo
 import { pickFiles } from '../lib/media'
 import { initials } from '../lib/palette'
 import { useUI } from '../store/ui'
+import { AccountCard } from '../components/AccountCard'
+import { signOutAndWipe, useSync } from '../lib/sync'
 
 export default function Profile() {
   const { theme, setTheme, name, setName, say, setBusy } = useUI()
@@ -56,7 +58,19 @@ export default function Profile() {
     }
   }
 
+  const signedIn = useSync((s) => !!s.user)
+
   const wipe = async () => {
+    if (signedIn) {
+      if (!confirm('Выйти и удалить все данные с этого устройства? В облаке они останутся и вернутся, когда вы снова войдёте.')) return
+      setBusy('Выходим…')
+      try {
+        await signOutAndWipe(wipeAll)
+      } finally {
+        setBusy(null)
+      }
+      return say('Устройство очищено')
+    }
     if (!confirm('Удалить все воспоминания, планы и билеты с этого устройства? Это нельзя отменить.')) return
     await wipeAll()
     say('Все данные удалены')
@@ -134,6 +148,11 @@ export default function Profile() {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span className="mono-label" style={{ padding: '4px 4px 0' }}>Аккаунт</span>
+          <AccountCard />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span className="mono-label" style={{ padding: '4px 4px 0' }}>Настройки</span>
           <div className="list">
             <div className="list-row">
@@ -167,10 +186,14 @@ export default function Profile() {
             )}
             <button className="list-row" onClick={wipe}>
               <div className="list-ico" style={{ background: 'rgba(255,90,95,.14)', color: 'var(--danger)' }}><Trash2 size={18} /></div>
-              <div style={{ flex: 1, color: 'var(--danger)' }} className="list-title">Удалить все данные</div>
+              <div style={{ flex: 1, color: 'var(--danger)' }} className="list-title">{signedIn ? 'Выйти и очистить устройство' : 'Удалить все данные'}</div>
             </button>
           </div>
-          <div className="hint" style={{ padding: '6px 4px 0' }}>Всё хранится только на этом устройстве. Делайте резервную копию, чтобы не потерять фото и билеты.</div>
+          <div className="hint" style={{ padding: '6px 4px 0' }}>
+            {signedIn
+              ? 'Данные хранятся на устройстве и синхронизируются с облаком. Демо-данные в облако не попадают.'
+              : 'Без аккаунта всё хранится только на этом устройстве. Войдите или делайте резервную копию, чтобы не потерять фото и билеты.'}
+          </div>
           <div className="mono" style={{ textAlign: 'center', fontSize: 10, fontWeight: 500, letterSpacing: '.16em', color: 'var(--tx3)', padding: '14px 0 0' }}>ENCORE 0.1</div>
         </div>
       </div>

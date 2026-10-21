@@ -14,6 +14,7 @@
     "@fontsource/anton": "^5.1.0",
     "@fontsource/ibm-plex-mono": "^5.1.0",
     "@fontsource/oswald": "^5.1.0",
+    "@supabase/supabase-js": "^2.117.3",
     "dexie": "^4.0.10",
     "dexie-react-hooks": "^1.1.7",
     "exifr": "^7.1.3",

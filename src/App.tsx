@@ -17,6 +17,7 @@ import TicketScan from './screens/TicketScan'
 import TicketReview from './screens/TicketReview'
 import Profile from './screens/Profile'
 import Onboarding from './screens/Onboarding'
+import Account from './screens/Account'
 
 const TAB_PATHS = ['/', '/upcoming', '/tickets', '/profile']
 // full-screen layers that are position:fixed — they must not sit inside a transform
@@ -80,6 +81,7 @@ const router = createBrowserRouter([
       { path: '/ticket/:id', element: <TicketDetail /> },
       { path: '/profile', element: <Profile /> },
       { path: '/welcome', element: <Onboarding /> },
+      { path: '/account', element: <Account /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
