@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
-import type { FriendRef } from './db'
+import { uid as newId, type FriendRef, type Media } from './db'
+import { resizeImage } from './media'
 import { setAfterSync, supabase, useSync } from './sync'
 import { useUI } from '../store/ui'
 
@@ -35,6 +36,9 @@ export interface SharePayload {
   setlist?: string[]
   encoreAt?: number | null
   genres?: string[]
+  /** media ids of the friend's photos/videos from this concert that we may copy */
+  photos?: string[]
+  videos?: string[]
 }
 
 export interface Share {
@@ -333,6 +337,55 @@ export function setShareStatus(id: string, status: 'added' | 'dismissed') {
   pending[id] = status
   write(PENDING, pending)
   flushPendingStatuses().catch(() => {})
+}
+
+/** Latest version of a shared card (the sender may have added photos since). */
+export async function fetchShare(id: string): Promise<Share | null> {
+  const { data, error } = await supabase.from('shares').select('id,kind,from_user,payload,created_at').eq('id', id).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const known = useSocial.getState().friends.find((f) => f.id === data.from_user)
+  return { id: data.id, kind: data.kind, payload: data.payload, created_at: data.created_at, from: known || { id: data.from_user, username: 'friend', name: 'Друг' } }
+}
+
+const thumbCache = new Map<string, string>()
+
+/** Short-lived links to a friend's photo previews (storage RLS allows only photos listed in their card). */
+export async function friendThumbUrls(fromId: string, ids: string[]): Promise<Record<string, string>> {
+  const out: Record<string, string> = {}
+  const need = ids.filter((id) => {
+    const hit = thumbCache.get(`${fromId}/${id}`)
+    if (hit) out[id] = hit
+    return !hit
+  })
+  if (need.length) {
+    const { data, error } = await supabase.storage.from('media').createSignedUrls(need.map((id) => `${fromId}/${id}.thumb`), 3600)
+    if (error) throw error
+    for (const r of data || []) {
+      const id = r.path?.split('/')[1]?.replace(/\.thumb$/, '')
+      if (id && r.signedUrl && !r.error) {
+        thumbCache.set(`${fromId}/${id}`, r.signedUrl)
+        out[id] = r.signedUrl
+      }
+    }
+  }
+  return out
+}
+
+/** Copy a friend's photos into my own media (new ids); they then sync as mine. */
+export async function importFriendPhotos(fromId: string, ids: string[], videos: string[] = []): Promise<Media[]> {
+  const out: Media[] = []
+  for (const id of ids) {
+    const { data: blob, error } = await supabase.storage.from('media').download(`${fromId}/${id}`)
+    if (error) throw error
+    const isVideo = videos.includes(id) || blob.type.startsWith('video/')
+    let thumb: Blob | undefined
+    const t = await supabase.storage.from('media').download(`${fromId}/${id}.thumb`)
+    if (!t.error) thumb = t.data
+    else if (!isVideo) thumb = await resizeImage(blob, 640, 'image/jpeg', 0.8)
+    out.push({ id: newId(), blob, thumb, kind: isVideo ? 'video' : 'image', createdAt: Date.now() })
+  }
+  return out
 }
 
 export const findShare = (id: string | null) => (id ? useSocial.getState().inbox.find((s) => s.id === id) : undefined)

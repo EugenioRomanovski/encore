@@ -47,6 +47,10 @@ export interface Memory {
   coverId?: string
   friends?: FriendRef[]
   sharedFrom?: ShareOrigin
+  /** Show this memory's photos to tagged friends (default: yes). */
+  sharePhotos?: boolean
+  /** Ids (in the friend's account) of photos already copied from `sharedFrom`. */
+  importedPhotos?: string[]
   palette: number
   createdAt: number
   updatedAt: number

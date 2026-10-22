@@ -3,6 +3,7 @@ import { MapPin } from 'lucide-react'
 import { setShareStatus, useSocial } from '../lib/social'
 import { stampDow } from '../lib/format'
 import { Avatar } from './ui'
+import { FriendPhotos } from './FriendPhotos'
 
 /** Concert cards friends tagged you on: "add it to your memories / plans". */
 export function ShareInbox({ kind }: { kind: 'memory' | 'event' }) {
@@ -32,6 +33,12 @@ export function ShareInbox({ kind }: { kind: 'memory' | 'event' }) {
                 </span>
               </div>
             </div>
+            {kind === 'memory' && !!s.payload.photos?.length && (
+              <div>
+                <FriendPhotos fromId={s.from.id} photos={s.payload.photos} videos={s.payload.videos} limit={4} />
+                <div className="hint" style={{ marginTop: 6 }}>Фото можно добавить к своему воспоминанию</div>
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 8 }}>
               <button className="btn btn-secondary btn-sm" style={{ width: '100%', background: 'var(--s2)' }} onClick={() => setShareStatus(s.id, 'dismissed')}>Скрыть</button>
               <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => nav(`/${kind === 'memory' ? 'memory' : 'event'}/new?share=${s.id}`)}>

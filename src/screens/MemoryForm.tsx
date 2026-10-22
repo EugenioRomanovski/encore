@@ -9,7 +9,9 @@ import { useBlobUrl, useMediaUrl } from '../lib/hooks'
 import { useSuggestions } from '../lib/suggest'
 import { ChipsInput } from '../components/ChipsInput'
 import { FriendPicker } from '../components/FriendPicker'
-import { findShare, setShareStatus } from '../lib/social'
+import { findShare, importFriendPhotos, setShareStatus, type Share } from '../lib/social'
+import { FriendPhotos } from '../components/FriendPhotos'
+import { Toggle } from '../components/ui'
 import { Avatar, Label, Spinner, Stars } from '../components/ui'
 import { useUI } from '../store/ui'
 
@@ -91,6 +93,10 @@ export default function MemoryForm() {
   const [setlist, setSetlist] = useState('')
   const [friends, setFriends] = useState<FriendRef[]>([])
   const [origin, setOrigin] = useState<ShareOrigin | undefined>()
+  const [sharePhotos, setSharePhotos] = useState(true)
+  // a friend's card with photos: which of their photos to copy into this memory
+  const [card, setCard] = useState<Share | null>(null)
+  const [friendSel, setFriendSel] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     ;(async () => {
@@ -102,7 +108,7 @@ export default function MemoryForm() {
         setArtist(m.artist); setTour(m.tour || ''); setVenue(m.venue); setDate(m.date); setTime(m.time || '')
         setRating(m.rating); setNotes(m.notes); setPeople(m.people); setGenres(m.genres)
         setSetlist(setlistToText(m.setlist, m.encoreAt))
-        setFriends(m.friends || []); setOrigin(m.sharedFrom)
+        setFriends(m.friends || []); setOrigin(m.sharedFrom); setSharePhotos(m.sharePhotos !== false)
       } else if (fromEvent) {
         const e = await db.events.get(fromEvent)
         if (e) {
@@ -120,6 +126,10 @@ export default function MemoryForm() {
           if (p.setlist?.length) setSetlist(setlistToText(p.setlist, p.encoreAt ?? null))
           setFriends([{ id: sh.from.id, username: sh.from.username, name: sh.from.name }])
           setOrigin({ shareId: sh.id, userId: sh.from.id, username: sh.from.username })
+          if (p.photos?.length) {
+            setCard(sh)
+            setFriendSel(new Set(p.photos))
+          }
         }
       }
       setLoaded(true)
@@ -168,9 +178,21 @@ export default function MemoryForm() {
 
   const save = async () => {
     if (!valid) return
-    setBusy('Сохраняем…')
+    setBusy(card && friendSel.size ? 'Копируем фото друга…' : 'Сохраняем…')
     try {
+      let copied: Media[] = []
+      let copyFailed = false
+      if (card && friendSel.size) {
+        const ids = card.payload.photos!.filter((id) => friendSel.has(id))
+        try {
+          copied = await importFriendPhotos(card.from.id, ids, card.payload.videos)
+        } catch (e) {
+          console.warn('friend photos', e)
+          copyFailed = true
+        }
+      }
       const { setlist: sl, encoreAt } = textToSetlist(setlist)
+      const allMedia = [...items.map((i) => i.id), ...copied.map((m) => m.id)]
       const now = Date.now()
       const mem: Memory = {
         id: orig?.id || uid(),
@@ -185,16 +207,20 @@ export default function MemoryForm() {
         genres,
         setlist: sl,
         encoreAt,
-        mediaIds: items.map((i) => i.id),
-        coverId: items[0]?.id,
+        mediaIds: allMedia,
+        coverId: allMedia[0],
         friends: friends.length ? friends : undefined,
         sharedFrom: origin,
+        sharePhotos: sharePhotos ? undefined : false,
+        importedPhotos: copied.length
+          ? [...(orig?.importedPhotos || []), ...card!.payload.photos!.filter((id) => friendSel.has(id))]
+          : orig?.importedPhotos,
         palette: orig?.palette ?? paletteFor(artist),
         createdAt: orig?.createdAt || now,
         updatedAt: now,
       }
       await db.transaction('rw', db.media, db.memories, db.tickets, db.events, async () => {
-        if (fresh.length) await db.media.bulkPut(fresh.map((i) => i.media!))
+        if (fresh.length || copied.length) await db.media.bulkPut([...fresh.map((i) => i.media!), ...copied])
         await deleteMedia(removed)
         await db.memories.put(mem)
         await db.tickets.where('memoryId').equals(mem.id).modify({ artist: mem.artist, venue: mem.venue, date: mem.date, tour: mem.tour })
@@ -211,7 +237,11 @@ export default function MemoryForm() {
         }
       })
       if (shareId && origin) setShareStatus(shareId, 'added')
-      say(editing ? 'Изменения сохранены' : friends.length && !editing ? 'Воспоминание сохранено — друзья увидят концерт у себя' : 'Воспоминание сохранено')
+      say(
+        copyFailed
+          ? 'Сохранено, но фото друга не загрузились — добавьте их позже на странице воспоминания'
+          : editing ? 'Изменения сохранены' : friends.length ? 'Воспоминание сохранено — друзья увидят концерт у себя' : 'Воспоминание сохранено',
+      )
       nav(`/memory/${mem.id}`, { replace: true })
     } catch (e) {
       console.error(e)
@@ -275,10 +305,28 @@ export default function MemoryForm() {
             </div>
           </>
         )}
+        {card && (
+          <div style={{ padding: '22px 0 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 20px 10px' }}>
+              <span className="mono-label">Фото от {card.from.name} · {friendSel.size} из {card.payload.photos!.length}</span>
+              <button className="link" style={{ fontSize: 13 }} onClick={() => setFriendSel(friendSel.size ? new Set() : new Set(card.payload.photos))}>
+                {friendSel.size ? 'Снять все' : 'Выбрать все'}
+              </button>
+            </div>
+            <FriendPhotos
+              fromId={card.from.id}
+              photos={card.payload.photos!}
+              videos={card.payload.videos}
+              selected={friendSel}
+              onToggle={(id) => setFriendSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })}
+            />
+            <div className="hint" style={{ padding: '8px 20px 0' }}>Выбранные фото скопируются в ваше воспоминание.</div>
+          </div>
+        )}
         <div style={{ flex: 1 }} />
         <div className="sticky-cta">
           <button className="btn btn-primary" onClick={() => setStep('form')} disabled={processing > 0}>
-            {items.length ? `Продолжить · ${items.length} фото` : 'Продолжить без фото'}
+            {items.length + friendSel.size ? `Продолжить · ${items.length + friendSel.size} фото` : 'Продолжить без фото'}
             <ArrowRight size={20} />
           </button>
         </div>
@@ -361,6 +409,15 @@ export default function MemoryForm() {
         <div className="section" style={{ gap: 8 }}>
           <Label>С кем ходили</Label>
           <FriendPicker value={friends} onChange={setFriends} />
+          {friends.length > 0 && (
+            <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14 }}>
+              <div style={{ flex: 1, font: '500 14px/1.35 var(--sans)' }}>
+                Показать отмеченным друзьям фото
+                <div className="hint" style={{ marginTop: 2 }}>Заметки остаются только у вас</div>
+              </div>
+              <Toggle on={sharePhotos} onChange={setSharePhotos} label="Показать отмеченным друзьям фото" />
+            </div>
+          )}
           <ChipsInput values={people} onChange={setPeople} placeholder="Имя друга" suggestions={sugg.people} render={(v) => <><Avatar name={v} size={26} /><span>{v}</span></>} />
         </div>
 

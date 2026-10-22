@@ -103,14 +103,20 @@ async function upload(p: string, blob: Blob) {
 }
 
 /** What a friend receives when tagged on a concert: the facts of the show, never photos or notes. */
-function sharePayload(kind: 'memory' | 'event', r: Memory | PlannedEvent) {
+async function sharePayload(kind: 'memory' | 'event', r: Memory | PlannedEvent) {
   const base = { artist: r.artist, tour: r.tour, venue: r.venue, date: r.date }
   if (kind === 'event') {
     const e = r as PlannedEvent
     return { ...base, doors: e.doors, show: e.show }
   }
   const m = r as Memory
-  return { ...base, time: m.time, setlist: m.setlist, encoreAt: m.encoreAt, genres: m.genres }
+  // photo ids listed here are exactly what storage RLS lets the friend read ("media: read photos shared with me")
+  const media = m.sharePhotos === false ? [] : ((await db.media.bulkGet(m.mediaIds)).filter(Boolean) as Media[])
+  return {
+    ...base, time: m.time, setlist: m.setlist, encoreAt: m.encoreAt, genres: m.genres,
+    photos: media.map((x) => x.id),
+    videos: media.filter((x) => x.kind === 'video').map((x) => x.id),
+  }
 }
 
 /** Send (or refresh) the concert card to tagged friends; the server skips anyone who isn't a friend. */
@@ -119,13 +125,14 @@ async function shareWithFriends(item: OutboxItem, rec: Memory | PlannedEvent | u
   const to = (rec.friends || []).map((f) => f.id).filter((id) => id !== rec.sharedFrom?.userId)
   if (!to.length) return
   const kind = item.table === 'memories' ? 'memory' : 'event'
-  const { error } = await supabase.rpc('share_concert', { p_to: to, p_kind: kind, p_source: rec.id, p_payload: sharePayload(kind, rec) })
+  const { error } = await supabase.rpc('share_concert', { p_to: to, p_kind: kind, p_source: rec.id, p_payload: await sharePayload(kind, rec) })
   if (error) throw error
 }
 
 /** Returns how many media files could not be uploaded (e.g. over the size limit). */
 async function push(uid: string): Promise<number> {
-  const items = await db.outbox.orderBy('at').toArray()
+  // files first: by the time a memory (and the card sent to friends) arrives, its photos are there
+  const items = (await db.outbox.orderBy('at').toArray()).sort((a, b) => Number(a.table !== 'media') - Number(b.table !== 'media'))
   let failed = 0
   const batch: { item: OutboxItem; row: Row }[] = []
   const flush = async () => {

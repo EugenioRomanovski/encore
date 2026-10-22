@@ -11,6 +11,7 @@ import { PhotoViewer } from '../components/PhotoViewer'
 import { AttachTicket, TicketStub } from '../components/TicketStub'
 import { useMedia } from '../lib/hooks'
 import { useUI } from '../store/ui'
+import { FriendPhotosSection } from '../components/FriendPhotosSection'
 
 function GalleryTile({ id, palette, i, more, big, onOpen }: { id: string; palette: number; i: number; more: number; big: boolean; onOpen: () => void }) {
   const m = useMedia(id)
@@ -120,6 +121,8 @@ export default function MemoryDetail() {
             <button className="dashed-btn" onClick={() => nav(`/memory/${m.id}/edit`)}><ImagePlus size={20} />Добавить фото с концерта</button>
           )}
         </div>
+
+        <FriendPhotosSection m={m} />
 
         <div className="section">
           <Label>Площадка</Label>
