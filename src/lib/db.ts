@@ -79,6 +79,18 @@ export interface SeatField {
   v: string
 }
 
+/** A barcode on a ticket page: its box as fractions of the page (quiet zone included) and what it encodes. */
+export interface TicketCode {
+  page: number
+  x: number
+  y: number
+  w: number
+  h: number
+  format: string
+  text: string
+  linear: boolean
+}
+
 export interface Ticket {
   id: string
   kind: TicketKind
@@ -97,6 +109,8 @@ export interface Ticket {
   time?: string
   seat: SeatField[]
   code?: string
+  /** barcodes / QR codes found on the pages; undefined = not looked for yet */
+  codes?: TicketCode[]
   palette: number
   createdAt: number
 }

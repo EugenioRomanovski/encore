@@ -36,6 +36,13 @@ export async function saveDraft(d: TicketDraft, info: TicketInfo, seat: Ticket['
     pageMedia.push({ id: uid(), blob: p, thumb: await resizeImage(p, 640, 'image/jpeg', 0.8), kind: 'image', createdAt: now })
   }
   const fileMedia: Media | undefined = d.file ? { id: uid(), blob: d.file, kind: 'file', createdAt: now } : undefined
+  let codes: Ticket['codes']
+  try {
+    const { findCodes } = await import('./barcodes')
+    codes = await findCodes(d.pages)
+  } catch (e) {
+    console.warn('barcode search failed', e) // looked for again when the ticket is opened
+  }
   const t: Ticket = {
     id: uid(),
     kind: d.kind,
@@ -45,6 +52,7 @@ export async function saveDraft(d: TicketDraft, info: TicketInfo, seat: Ticket['
     fileSize: d.fileSize,
     ...info,
     seat: seat.filter((s) => s.v.trim()),
+    codes,
     palette: paletteFor(info.artist + info.date) % 6,
     createdAt: now,
   }

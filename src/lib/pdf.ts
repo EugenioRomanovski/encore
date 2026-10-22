@@ -68,3 +68,24 @@ export async function renderPdf(file: Blob, maxPages = 8): Promise<RenderedPdf> 
   await doc.destroy()
   return { pages, text: lines.map((l) => l.text).join('\n'), lines }
 }
+
+/** Render one region of a page (fractions of the page) sharply, about `px` pixels across. */
+export async function renderRegion(file: Blob, r: { page: number; x: number; y: number; w: number; h: number }, px = 1200): Promise<HTMLCanvasElement> {
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
+  try {
+    const page = await doc.getPage(r.page + 1)
+    const base = page.getViewport({ scale: 1 })
+    const scale = Math.min(12, px / Math.max(1, r.w * base.width))
+    const vp = page.getViewport({ scale, offsetX: -r.x * base.width * scale, offsetY: -r.y * base.height * scale })
+    const c = document.createElement('canvas')
+    c.width = Math.round(r.w * base.width * scale)
+    c.height = Math.round(r.h * base.height * scale)
+    const ctx = c.getContext('2d')!
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, c.width, c.height)
+    await page.render({ canvasContext: ctx, viewport: vp }).promise
+    return c
+  } finally {
+    await doc.destroy()
+  }
+}

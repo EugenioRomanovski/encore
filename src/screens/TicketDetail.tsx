@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, ChevronRight, ExternalLink, Link2, Share, Sun, Trash2 } from 'lucide-react'
-import { db, deleteTicket } from '../lib/db'
+import { ChevronLeft, ChevronRight, ExternalLink, FileText, Link2, Share, Sun, Trash2, X } from 'lucide-react'
+import { db, deleteTicket, type Media, type Ticket, type TicketCode } from '../lib/db'
 import { fileSize, pl, stampDow } from '../lib/format'
 import { TICKET_PAL } from '../lib/palette'
 import { useBlobUrl, useMedia, useWakeLock } from '../lib/hooks'
 import { DEMO_QR } from '../lib/demo'
 import { Menu } from '../components/Menu'
+import { Portal } from '../components/Portal'
 import { PhotoViewer } from '../components/PhotoViewer'
 import { KIND } from './Tickets'
 import { useUI } from '../store/ui'
@@ -22,6 +23,71 @@ function Page({ id, onOpen }: { id: string; onOpen: () => void }) {
   )
 }
 
+/** Look for barcodes on tickets saved before codes were detected (or when detection failed at import). */
+function useCodes(t: Ticket | null | undefined) {
+  useEffect(() => {
+    if (!t || t.codes || !t.pageIds.length) return
+    let live = true
+    ;(async () => {
+      const pages = (await db.media.bulkGet(t.pageIds)).filter(Boolean).map((m) => m!.blob)
+      const { findCodes } = await import('../lib/barcodes')
+      const codes = await findCodes(pages)
+      if (live) await db.tickets.update(t.id, { codes })
+    })().catch((e) => console.warn('barcode search failed', e))
+    return () => {
+      live = false
+    }
+  }, [t])
+}
+
+function useCodeImage(t: Ticket, i: number, file?: Media) {
+  const code = t.codes![i]
+  const page = useMedia(t.pageIds[code.page])
+  const [blob, setBlob] = useState<Blob | null>(null)
+  const pdf = file && file.blob.type === 'application/pdf' ? file.blob : undefined
+  useEffect(() => {
+    if (!page) return
+    let live = true
+    import('../lib/barcodes')
+      .then((m) => m.cropCode(`${t.id}:${i}:${code.text}:${pdf ? 'pdf' : 'img'}`, code, page.blob, pdf))
+      .then((b) => live && setBlob(b), (e) => console.warn('code crop failed', e))
+    return () => {
+      live = false
+    }
+  }, [t.id, i, code, page, pdf])
+  return { url: useBlobUrl(blob), sharp: !!pdf, code }
+}
+
+const showText = (c: TicketCode) => c.text.length <= 32 && /^[\x20-\x7e]+$/.test(c.text)
+
+/** One code, big, on the white part of the stub. */
+function CodeView({ t, i, file, onOpen }: { t: Ticket; i: number; file?: Media; onOpen: () => void }) {
+  const { url, sharp, code } = useCodeImage(t, i, file)
+  return (
+    <button onClick={onOpen} aria-label="Показать код на весь экран" data-testid="ticket-code" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
+      <div style={{ width: '100%', maxWidth: code.linear ? '100%' : 280, minHeight: url ? undefined : code.linear ? 110 : 280 }}>
+        {url ? <img src={url} alt="Штрихкод билета" style={{ display: 'block', width: '100%', height: 'auto', imageRendering: sharp ? 'auto' : 'pixelated' }} /> : null}
+      </div>
+      {showText(code) && <div className="mono" style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', color: 'rgba(22,19,26,.65)', overflowWrap: 'anywhere' }}>{code.text}</div>}
+    </button>
+  )
+}
+
+/** Full screen, white, as large as possible — for the scanner at the gate. */
+function CodeFullscreen({ t, i, file, onClose }: { t: Ticket; i: number; file?: Media; onClose: () => void }) {
+  const { url, sharp, code } = useCodeImage(t, i, file)
+  return (
+    <Portal>
+      <div role="dialog" aria-label="Код билета" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 120, background: '#fff', color: '#16131A', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, padding: '0 16px', animation: 'enc-fade .2s ease-out' }}>
+        <button aria-label="Закрыть" onClick={onClose} style={{ position: 'absolute', top: 'calc(var(--sat) + 12px)', right: 16, width: 44, height: 44, borderRadius: 22, background: 'rgba(22,19,26,.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16131A' }}><X size={22} /></button>
+        {url && <img src={url} alt="Штрихкод билета" style={{ display: 'block', width: '100%', maxWidth: code.linear ? 'none' : 'min(100%, 70dvh)', maxHeight: '70dvh', objectFit: 'contain', imageRendering: sharp ? 'auto' : 'pixelated' }} />}
+        {showText(code) && <div className="mono" style={{ fontSize: 16, fontWeight: 600, letterSpacing: '.14em', overflowWrap: 'anywhere', textAlign: 'center' }}>{code.text}</div>}
+        <div style={{ font: '500 13px var(--sans)', color: 'rgba(22,19,26,.5)' }}>{t.artist}{t.seat.length ? ' · ' + t.seat.map((s) => `${s.k} ${s.v}`).join(' · ') : ''}</div>
+      </div>
+    </Portal>
+  )
+}
+
 export default function TicketDetail() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -32,7 +98,10 @@ export default function TicketDetail() {
   const file = useMedia(t?.fileId)
   const [page, setPage] = useState(0)
   const [viewer, setViewer] = useState(false)
+  const [codeIdx, setCodeIdx] = useState(0)
+  const [bigCode, setBigCode] = useState(false)
   const awake = useWakeLock(!!t)
+  useCodes(t)
 
   if (t === undefined) return null
   if (!t) {
@@ -47,6 +116,16 @@ export default function TicketDetail() {
   const p = TICKET_PAL[t.palette % TICKET_PAL.length]
   const k = KIND[t.kind]
   const pages = t.pageIds
+  const codes = t.codes || []
+  const ci = Math.min(codeIdx, Math.max(0, codes.length - 1))
+  // with codes found, the pager steps through codes; otherwise through pages
+  const count = codes.length || pages.length
+  const at = codes.length ? ci : page
+  const go = (d: number) => (codes.length ? setCodeIdx((x) => Math.max(0, Math.min(codes.length - 1, x + d))) : setPage((x) => Math.max(0, Math.min(pages.length - 1, x + d))))
+  const openPages = () => {
+    if (codes.length) setPage(codes[ci].page)
+    setViewer(true)
+  }
   const back = () => (from ? nav(-1) : nav('/tickets'))
 
   const share = async () => {
@@ -90,9 +169,9 @@ export default function TicketDetail() {
     <div className="screen" style={{ paddingBottom: 'calc(30px + var(--sab))' }}>
       <div style={{ padding: 'calc(var(--sat) + 8px) 8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button className="nav-link" style={{ color: 'var(--mag)' }} onClick={back}><ChevronLeft size={22} />Назад</button>
-        <div style={{ paddingRight: 8 }}>
+        <div style={{ paddingRight: 8, display: 'flex', gap: 8 }}>
+          <button className="icon-btn" aria-label="Поделиться" onClick={share}><Share size={19} /></button>
           <Menu items={[
-            ...(file ? [{ label: 'Открыть оригинал', icon: <ExternalLink size={18} />, onClick: openOriginal }] : []),
             { label: 'Изменить привязку', icon: <Link2 size={18} />, onClick: () => nav(`/tickets/assign?ticket=${t.id}`) },
             { label: 'Удалить билет', icon: <Trash2 size={18} />, danger: true, onClick: remove },
           ]} />
@@ -126,7 +205,14 @@ export default function TicketDetail() {
           <div style={{ position: 'absolute', left: 18, right: 18, top: -1, borderTop: '2px dashed rgba(22,19,26,.25)', zIndex: 2 }} />
         </div>
         <div style={{ padding: '22px 16px 20px', borderRadius: '0 0 26px 26px', background: '#F7F4EE', color: '#16131A' }}>
-          {pages.length > 0 ? (
+          {codes.length > 0 ? (
+            <>
+              <CodeView key={ci} t={t} i={ci} file={file} onOpen={() => setBigCode(true)} />
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                <button onClick={openPages} style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 12px var(--sans)', color: 'rgba(22,19,26,.55)', padding: '6px 10px' }}><FileText size={14} />Весь билет</button>
+              </div>
+            </>
+          ) : pages.length > 0 ? (
             <Page key={pages[page]} id={pages[page]} onOpen={() => setViewer(true)} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
@@ -151,29 +237,34 @@ export default function TicketDetail() {
         </div>
       </div>
 
-      {pages.length > 1 && (
+      {count > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 14 }}>
-          <button aria-label="Предыдущая" onClick={() => setPage((x) => Math.max(0, x - 1))} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx2)' }}><ChevronLeft size={22} /></button>
+          <button aria-label="Предыдущая" onClick={() => go(-1)} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx2)' }}><ChevronLeft size={22} /></button>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <div style={{ display: 'flex', gap: 5 }}>
-              {pages.map((_, i) => <div key={i} style={{ height: 6, borderRadius: 3, transition: 'width .25s', width: i === page ? 18 : 6, background: i === page ? 'var(--tx)' : 'var(--line2)' }} />)}
+              {Array.from({ length: count }, (_, i) => <div key={i} style={{ height: 6, borderRadius: 3, transition: 'width .25s', width: i === at ? 18 : 6, background: i === at ? 'var(--tx)' : 'var(--line2)' }} />)}
             </div>
-            <span className="mono-label" style={{ fontSize: 10 }}>СТР. {page + 1} ИЗ {pages.length}</span>
+            <span className="mono-label" style={{ fontSize: 10 }}>{codes.length ? 'КОД' : 'СТР.'} {at + 1} ИЗ {count}</span>
           </div>
-          <button aria-label="Следующая" onClick={() => setPage((x) => Math.min(pages.length - 1, x + 1))} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx2)' }}><ChevronRight size={22} /></button>
+          <button aria-label="Следующая" onClick={() => go(1)} style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--tx2)' }}><ChevronRight size={22} /></button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10, padding: '16px 20px 0' }}>
-        <button className="btn btn-secondary" style={{ height: 52 }} onClick={share}><Share size={18} />Поделиться</button>
+      <div style={{ display: 'grid', gridTemplateColumns: file || pages.length ? '1fr 1.4fr' : '1fr', gap: 10, padding: '16px 20px 0' }}>
         {linked ? (
-          <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={() => nav(linked)}><Link2 size={18} />{t.eventId ? 'К концерту' : 'К воспоминанию'}</button>
+          <button className="btn btn-secondary" style={{ height: 56 }} onClick={() => nav(linked)}><Link2 size={18} />{t.eventId ? 'К концерту' : 'К воспоминанию'}</button>
         ) : (
-          <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={() => nav(`/tickets/assign?ticket=${t.id}`)}><Link2 size={18} />Привязать</button>
+          <button className="btn btn-secondary" style={{ height: 56 }} onClick={() => nav(`/tickets/assign?ticket=${t.id}`)}><Link2 size={18} />Привязать</button>
         )}
+        {file ? (
+          <button className="btn btn-primary" style={{ height: 56, fontSize: 16 }} onClick={openOriginal}><ExternalLink size={19} />Открыть оригинал</button>
+        ) : pages.length > 0 ? (
+          <button className="btn btn-primary" style={{ height: 56, fontSize: 16 }} onClick={openPages}><FileText size={19} />Весь билет</button>
+        ) : null}
       </div>
       {info && <div className="mono" style={{ textAlign: 'center', fontSize: 10, fontWeight: 500, letterSpacing: '.1em', color: 'var(--tx3)', padding: '16px 20px 0', textTransform: 'uppercase' }}>{info}</div>}
 
+      {bigCode && codes.length > 0 && <CodeFullscreen t={t} i={ci} file={file} onClose={() => setBigCode(false)} />}
       {viewer && <PhotoViewer ids={pages} start={page} onClose={() => setViewer(false)} />}
     </div>
   )
