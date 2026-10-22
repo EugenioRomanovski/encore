@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Portal } from '../components/Portal'
 import { useNavigate } from 'react-router-dom'
 import { Maximize, RotateCw } from 'lucide-react'
 import { applyFilter, blobToCanvas, canvasBlob, rotate90, warpQuad, type Filter, type Pt } from '../lib/scan'
@@ -135,69 +136,71 @@ export default function TicketReview() {
   const pts = fit ? quad.map((p) => ({ x: p.x * fit.k + fit.ox, y: p.y * fit.k + fit.oy })) : []
 
   return (
-    <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 60, background: '#0B0B0F', color: '#fff', display: 'flex', flexDirection: 'column', animation: 'enc-fade .25s ease-out' }}>
-      <div style={{ padding: 'calc(var(--sat) + 8px) 8px 0' }}>
-        <div className="navbar-grid">
-          <button className="nav-link" style={{ color: 'rgba(255,255,255,.7)' }} onClick={stage === 'crop' ? retake : () => setStage('crop')}>{stage === 'crop' ? 'Переснять' : 'Рамка'}</button>
-          <div className="navbar-title">{stage === 'crop' ? 'Обрезка' : 'Улучшение'}</div>
-          <button className="nav-link accent" style={{ color: '#FF4F9A' }} onClick={stage === 'crop' ? next : use} disabled={working || !src}>Далее</button>
+    <Portal>
+      <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 60, background: '#0B0B0F', color: '#fff', display: 'flex', flexDirection: 'column', animation: 'enc-fade .25s ease-out' }}>
+        <div style={{ padding: 'calc(var(--sat) + 8px) 8px 0' }}>
+          <div className="navbar-grid">
+            <button className="nav-link" style={{ color: 'rgba(255,255,255,.7)' }} onClick={stage === 'crop' ? retake : () => setStage('crop')}>{stage === 'crop' ? 'Переснять' : 'Рамка'}</button>
+            <div className="navbar-title">{stage === 'crop' ? 'Обрезка' : 'Улучшение'}</div>
+            <button className="nav-link accent" style={{ color: '#FF4F9A' }} onClick={stage === 'crop' ? next : use} disabled={working || !src}>Далее</button>
+          </div>
+        </div>
+
+        <div ref={area} style={{ position: 'relative', flex: 1, minHeight: 0, touchAction: 'none' }}>
+          {stage === 'crop' && srcUrl && fit && (
+            <>
+              <img src={srcUrl} alt="" style={{ position: 'absolute', left: fit.ox, top: fit.oy, width: fit.w, height: fit.h }} />
+              <svg width={box.w} height={box.h} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+                <path fillRule="evenodd" fill="rgba(0,0,0,.55)" d={`M${fit.ox},${fit.oy}h${fit.w}v${fit.h}h${-fit.w}Z M${pts.map((p) => `${p.x},${p.y}`).join(' L')}Z`} />
+                <polygon points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(255,46,136,.08)" stroke="#FF2E88" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 0 10px rgba(255,46,136,.7))' }} />
+              </svg>
+              {pts.map((p, i) => (
+                <div key={i} onPointerDown={drag(i)} style={{ position: 'absolute', left: p.x - 22, top: p.y - 22, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 10, background: '#fff', border: '3px solid #FF2E88', boxShadow: '0 2px 8px rgba(0,0,0,.5)' }} />
+                </div>
+              ))}
+            </>
+          )}
+          {stage === 'enhance' && (
+            <div style={{ position: 'absolute', inset: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {outUrl && <img src={outUrl} alt="Скан" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 20px 50px rgba(0,0,0,.6)', opacity: working ? 0.6 : 1, transition: 'opacity .2s' }} />}
+            </div>
+          )}
+          {(working || !src) && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}><Spinner /></div>}
+        </div>
+
+        <div style={{ padding: '14px 20px calc(24px + var(--sab))', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {stage === 'crop' ? (
+            <>
+              <div style={{ textAlign: 'center', font: '500 13px var(--sans)', color: 'rgba(255,255,255,.6)' }}>Перетащите углы на края билета</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 28, color: 'rgba(255,255,255,.85)' }}>
+                <button onClick={rotate} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, font: '600 11px var(--sans)' }}><RotateCw size={22} />Повернуть</button>
+                <button onClick={() => src && setQuad(insetQuad(src.width, src.height, 0))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, font: '600 11px var(--sans)' }}><Maximize size={22} />Весь кадр</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
+                <button className="btn" style={{ height: 52, background: 'rgba(255,255,255,.1)', fontWeight: 600, fontSize: 15 }} onClick={retake}>Переснять</button>
+                <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={next} disabled={working || !src}>Обрезать</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
+                {FILTERS.map((f) => (
+                  <button key={f.k} onClick={() => setFilter(f.k)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <WarpThumb canvas={warpedBlob} css={f.css} on={filter === f.k} />
+                    <span style={{ font: '600 12px var(--sans)', color: filter === f.k ? '#fff' : 'rgba(255,255,255,.55)' }}>{f.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
+                <button className="btn" style={{ height: 52, background: 'rgba(255,255,255,.1)', fontWeight: 600, fontSize: 15 }} onClick={retake}>Переснять</button>
+                <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={use} disabled={working || !out}>Использовать скан</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      <div ref={area} style={{ position: 'relative', flex: 1, minHeight: 0, touchAction: 'none' }}>
-        {stage === 'crop' && srcUrl && fit && (
-          <>
-            <img src={srcUrl} alt="" style={{ position: 'absolute', left: fit.ox, top: fit.oy, width: fit.w, height: fit.h }} />
-            <svg width={box.w} height={box.h} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              <path fillRule="evenodd" fill="rgba(0,0,0,.55)" d={`M${fit.ox},${fit.oy}h${fit.w}v${fit.h}h${-fit.w}Z M${pts.map((p) => `${p.x},${p.y}`).join(' L')}Z`} />
-              <polygon points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(255,46,136,.08)" stroke="#FF2E88" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 0 10px rgba(255,46,136,.7))' }} />
-            </svg>
-            {pts.map((p, i) => (
-              <div key={i} onPointerDown={drag(i)} style={{ position: 'absolute', left: p.x - 22, top: p.y - 22, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', touchAction: 'none', cursor: 'grab' }}>
-                <div style={{ width: 20, height: 20, borderRadius: 10, background: '#fff', border: '3px solid #FF2E88', boxShadow: '0 2px 8px rgba(0,0,0,.5)' }} />
-              </div>
-            ))}
-          </>
-        )}
-        {stage === 'enhance' && (
-          <div style={{ position: 'absolute', inset: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {outUrl && <img src={outUrl} alt="Скан" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 20px 50px rgba(0,0,0,.6)', opacity: working ? 0.6 : 1, transition: 'opacity .2s' }} />}
-          </div>
-        )}
-        {(working || !src) && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}><Spinner /></div>}
-      </div>
-
-      <div style={{ padding: '14px 20px calc(24px + var(--sab))', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {stage === 'crop' ? (
-          <>
-            <div style={{ textAlign: 'center', font: '500 13px var(--sans)', color: 'rgba(255,255,255,.6)' }}>Перетащите углы на края билета</div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 28, color: 'rgba(255,255,255,.85)' }}>
-              <button onClick={rotate} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, font: '600 11px var(--sans)' }}><RotateCw size={22} />Повернуть</button>
-              <button onClick={() => src && setQuad(insetQuad(src.width, src.height, 0))} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, font: '600 11px var(--sans)' }}><Maximize size={22} />Весь кадр</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
-              <button className="btn" style={{ height: 52, background: 'rgba(255,255,255,.1)', fontWeight: 600, fontSize: 15 }} onClick={retake}>Переснять</button>
-              <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={next} disabled={working || !src}>Обрезать</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 14 }}>
-              {FILTERS.map((f) => (
-                <button key={f.k} onClick={() => setFilter(f.k)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <WarpThumb canvas={warpedBlob} css={f.css} on={filter === f.k} />
-                  <span style={{ font: '600 12px var(--sans)', color: filter === f.k ? '#fff' : 'rgba(255,255,255,.55)' }}>{f.label}</span>
-                </button>
-              ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 10 }}>
-              <button className="btn" style={{ height: 52, background: 'rgba(255,255,255,.1)', fontWeight: 600, fontSize: 15 }} onClick={retake}>Переснять</button>
-              <button className="btn btn-primary" style={{ height: 52, fontSize: 15 }} onClick={use} disabled={working || !out}>Использовать скан</button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+    </Portal>
   )
 }
 

@@ -8,6 +8,7 @@ import { pickFiles } from '../lib/media'
 import { initials } from '../lib/palette'
 import { useUI } from '../store/ui'
 import { AccountCard } from '../components/AccountCard'
+import { Portal } from '../components/Portal'
 import { FriendsCard } from '../components/FriendsCard'
 import { pushDisplayName, removeAvatar, setAvatar, useMyAvatar, useSocial } from '../lib/social'
 import { squareImage } from '../lib/media'
@@ -244,7 +245,7 @@ export default function Profile() {
         </div>
       </div>
       {avatarSheet && (
-        <>
+        <Portal>
           <div className="backdrop" onClick={() => setAvatarSheet(false)} />
           <div className="sheet fixed-col" role="dialog" aria-label="Фото профиля">
             <div className="sheet-grip" />
@@ -266,7 +267,7 @@ export default function Profile() {
               <button className="btn btn-secondary" style={{ background: 'var(--s2)', marginTop: 4 }} onClick={() => setAvatarSheet(false)}>Отмена</button>
             </div>
           </div>
-        </>
+        </Portal>
       )}
     </div>
   )

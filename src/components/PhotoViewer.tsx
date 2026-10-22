@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Portal } from './Portal'
 import { X } from 'lucide-react'
 import { useBlobUrl, useMedia } from '../lib/hooks'
 
@@ -30,22 +31,24 @@ export function PhotoViewer({ ids, start, onClose }: { ids: string[]; start: num
     return () => window.removeEventListener('keydown', k)
   }, [onClose])
   return (
-    <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 100, background: '#000', animation: 'enc-fade .2s ease' }}>
-      <div
-        ref={ref}
-        onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
-        style={{ display: 'flex', height: '100%', overflowX: 'auto', scrollSnapType: 'x mandatory' }}
-      >
-        {ids.map((id) => (
-          <Slide key={id} id={id} />
-        ))}
+    <Portal>
+      <div className="fixed-col" style={{ top: 0, bottom: 0, zIndex: 100, background: '#000', animation: 'enc-fade .2s ease' }}>
+        <div
+          ref={ref}
+          onScroll={(e) => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+          style={{ display: 'flex', height: '100%', overflowX: 'auto', scrollSnapType: 'x mandatory' }}
+        >
+          {ids.map((id) => (
+            <Slide key={id} id={id} />
+          ))}
+        </div>
+        <div style={{ position: 'absolute', top: 'calc(var(--sat) + 12px)', left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
+          <span className="mono" style={{ fontSize: 12, letterSpacing: '.16em' }}>{i + 1} / {ids.length}</span>
+          <button className="glass-btn" onClick={onClose} aria-label="Закрыть">
+            <X size={22} />
+          </button>
+        </div>
       </div>
-      <div style={{ position: 'absolute', top: 'calc(var(--sat) + 12px)', left: 16, right: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff' }}>
-        <span className="mono" style={{ fontSize: 12, letterSpacing: '.16em' }}>{i + 1} / {ids.length}</span>
-        <button className="glass-btn" onClick={onClose} aria-label="Закрыть">
-          <X size={22} />
-        </button>
-      </div>
-    </div>
+    </Portal>
   )
 }

@@ -184,20 +184,23 @@ a {
 }
 
 /* Route transitions. Only opacity + transform on the route wrapper, never on
-   fixed layers: a transformed ancestor turns position:fixed into absolute. */
+   fixed layers: a transformed ancestor turns position:fixed into absolute.
+   Fill "backwards", not "both": nothing of the animation may linger once it ends
+   (iOS Safari keeps a filled transform animation as a containing block). Overlays
+   are also portalled to <body> (components/Portal.tsx). */
 .route-push {
-  animation: enc-push 0.36s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+  animation: enc-push 0.36s cubic-bezier(0.22, 0.8, 0.24, 1) backwards;
 }
 .route-pop {
-  animation: enc-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+  animation: enc-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) backwards;
 }
 .route-fade {
-  animation: enc-fade 0.22s ease-out both;
+  animation: enc-fade 0.22s ease-out backwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .route-push,
   .route-pop {
-    animation: enc-fade 0.2s ease-out both;
+    animation: enc-fade 0.2s ease-out backwards;
   }
 }
 .screen.with-tabs {
