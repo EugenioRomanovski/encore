@@ -651,6 +651,16 @@ a {
 .tab.active {
   color: var(--tx);
 }
+.tab-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background: #ff2e88;
+  box-shadow: 0 0 0 2px var(--tab), 0 0 8px rgba(255, 46, 136, 0.8);
+}
 .fab {
   width: 58px;
   height: 58px;
