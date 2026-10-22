@@ -60,12 +60,15 @@ function TicketSheet() {
   const { openSheet, setDraft, setBusy, say } = useUI()
 
   const run = async (accept: string, make: (f: File) => Promise<import('../store/ui').TicketDraft>, label: string) => {
-    const [file] = await pickFiles(accept)
-    if (!file) return
+    // several files at once = several tickets for the same concert
+    const files = await pickFiles(accept, true)
+    if (!files.length) return
     openSheet(null)
     setBusy(label)
     try {
-      setDraft(await make(file))
+      const drafts = []
+      for (const f of files) drafts.push(await make(f))
+      setDraft(drafts.length > 1 ? { ...drafts[0], more: drafts.slice(1) } : drafts[0])
       nav('/tickets/assign')
     } catch (e) {
       console.error(e)

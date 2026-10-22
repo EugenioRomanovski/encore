@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, ChevronLeft, PlusCircle, Sparkles } from 'lucide-react'
 import { db, type SeatField } from '../lib/db'
-import { dayNum, monShort, stamp, todayISO } from '../lib/format'
+import { dayNum, monShort, pl, stamp, todayISO } from '../lib/format'
 import { saveDraft, type TicketInfo } from '../lib/ticketImport'
 import { textMentions } from '../lib/ticketText'
 import { useBlobUrl, useMediaUrl } from '../lib/hooks'
@@ -19,7 +19,8 @@ interface Row {
   venue: string
   date: string
   time?: string
-  taken: boolean
+  /** tickets already saved for it */
+  taken: number
 }
 
 const DEFAULT_LABELS = ['СЕКТОР', 'РЯД', 'МЕСТО']
@@ -39,11 +40,10 @@ export default function TicketAssign() {
 
   const data = useLiveQuery(async () => {
     const [events, memories, tickets] = await Promise.all([db.events.orderBy('date').toArray(), db.memories.orderBy('date').reverse().limit(30).toArray(), db.tickets.toArray()])
-    const takenE = new Set(tickets.filter((t) => t.id !== ticketId).map((t) => t.eventId))
-    const takenM = new Set(tickets.filter((t) => t.id !== ticketId).map((t) => t.memoryId))
+    const count = (key: 'eventId' | 'memoryId', id: string) => tickets.filter((t) => t.id !== ticketId && t[key] === id).length
     const rows: Row[] = [
-      ...events.map((e) => ({ kind: 'event' as const, id: e.id, artist: e.artist, tour: e.tour, venue: e.venue, date: e.date, time: e.show, taken: takenE.has(e.id) })),
-      ...memories.map((m) => ({ kind: 'memory' as const, id: m.id, artist: m.artist, tour: m.tour, venue: m.venue, date: m.date, time: m.time, taken: takenM.has(m.id) })),
+      ...events.map((e) => ({ kind: 'event' as const, id: e.id, artist: e.artist, tour: e.tour, venue: e.venue, date: e.date, time: e.show, taken: count('eventId', e.id) })),
+      ...memories.map((m) => ({ kind: 'memory' as const, id: m.id, artist: m.artist, tour: m.tour, venue: m.venue, date: m.date, time: m.time, taken: count('memoryId', m.id) })),
     ]
     return rows
   }, [ticketId])
@@ -91,6 +91,9 @@ export default function TicketAssign() {
   const readSomething = (draft?.seat.length || 0) > 0 || !!matchId || !!hints?.artists.length || !!hints?.dates.length
   const readLine = [hints?.artists[0], hints?.dates[0] && stamp(hints.dates[0]), hints?.venues[0]].filter(Boolean).join(' · ')
 
+  const extra = existing ? [] : draft?.more || []
+  const total = 1 + extra.length
+
   const save = async () => {
     if (!chosen) return
     const info: TicketInfo = {
@@ -111,8 +114,10 @@ export default function TicketAssign() {
         nav(`/ticket/${existing.id}`, { replace: true })
       } else if (draft) {
         await saveDraft(draft, info, cleanSeat)
+        // the other picked files keep the seats read from them
+        for (const d of extra) await saveDraft(d, info, d.seat)
         setDraft(null)
-        say('Билет сохранён')
+        say(total > 1 ? `Сохранено: ${pl(total, ['билет', 'билета', 'билетов'])}` : 'Билет сохранён')
         nav('/tickets', { replace: true })
       }
     } catch (e) {
@@ -142,7 +147,7 @@ export default function TicketAssign() {
             {r.id === matchId && <span style={{ flex: 'none', padding: '2px 6px', borderRadius: 6, background: 'var(--af)', color: 'var(--mag)', font: '700 10px var(--sans)' }}>Совпадение</span>}
           </div>
           <div className="ellipsis" style={{ font: '400 13px var(--sans)', color: 'var(--tx2)', marginTop: 4 }}>
-            {r.venue}{r.taken ? ' · уже есть билет' : ''}
+            {[r.venue, r.taken && `уже ${pl(r.taken, ['билет', 'билета', 'билетов'])}`].filter(Boolean).join(' · ')}
           </div>
         </div>
         <div style={{ width: 24, height: 24, flex: 'none', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: on ? 'var(--grad)' : 'transparent', border: on ? 'none' : '1.5px solid var(--line2)' }}>
@@ -157,7 +162,7 @@ export default function TicketAssign() {
       <div className="navbar">
         <div className="navbar-grid">
           <button className="nav-link" style={{ color: 'var(--mag)' }} onClick={back}><ChevronLeft size={20} />Назад</button>
-          <div className="navbar-title">{existing ? 'Привязка билета' : 'Новый билет'}</div>
+          <div className="navbar-title">{existing ? 'Привязка билета' : total > 1 ? `Новые билеты · ${total}` : 'Новый билет'}</div>
           <div />
         </div>
       </div>
@@ -174,7 +179,7 @@ export default function TicketAssign() {
         </div>
 
         <div className="section" style={{ gap: 8 }}>
-          <span className="mono-label">Место · необязательно</span>
+          <span className="mono-label">{total > 1 ? 'Место в первом билете · необязательно' : 'Место · необязательно'}</span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
             {seat.map((s, i) => (
               <div key={i} className="card" style={{ padding: '8px 10px', borderRadius: 14 }}>
@@ -201,7 +206,7 @@ export default function TicketAssign() {
         </div>
       </div>
       <div className="sticky-cta">
-        <button className="btn btn-primary" disabled={!chosen} onClick={save}>{existing ? 'Сохранить' : 'Сохранить билет'}</button>
+        <button className="btn btn-primary" disabled={!chosen} onClick={save}>{existing ? 'Сохранить' : total > 1 ? `Сохранить ${pl(total, ['билет', 'билета', 'билетов'])}` : 'Сохранить билет'}</button>
       </div>
     </div>
   )

@@ -34,7 +34,7 @@ export default function MemoryDetail() {
   const nav = useNavigate()
   const { openSheet, say } = useUI()
   const m = useLiveQuery(() => db.memories.get(id!), [id])
-  const ticket = useLiveQuery(() => db.tickets.where('memoryId').equals(id!).first(), [id])
+  const tickets = useLiveQuery(() => db.tickets.where('memoryId').equals(id!).sortBy('createdAt'), [id])
   const venueCount = useLiveQuery(async () => (m ? db.memories.where('venue').equals(m.venue).count() : 0), [m?.venue])
   const [viewer, setViewer] = useState<number | null>(null)
 
@@ -195,12 +195,9 @@ export default function MemoryDetail() {
         </div>
 
         <div className="section">
-          <Label>Билет</Label>
-          {ticket ? (
-            <TicketStub t={ticket} from={`/memory/${m.id}`} />
-          ) : (
-            <AttachTicket label="Прикрепить корешок билета" onClick={() => openSheet('ticket', { memoryId: m.id })} />
-          )}
+          <Label>{tickets && tickets.length > 1 ? 'Билеты' : 'Билет'}</Label>
+          {tickets?.map((t) => <TicketStub key={t.id} t={t} from={`/memory/${m.id}`} />)}
+          {tickets && <AttachTicket label={tickets.length ? 'Добавить ещё билет' : 'Прикрепить корешок билета'} onClick={() => openSheet('ticket', { memoryId: m.id })} />}
         </div>
       </div>
 

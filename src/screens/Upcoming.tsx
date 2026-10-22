@@ -9,11 +9,18 @@ import { TicketArt } from '../components/ui'
 import { ShareInbox } from '../components/ShareInbox'
 import { useUI } from '../store/ui'
 
-function useTicketEventIds() {
-  return useLiveQuery(async () => new Set((await db.tickets.toArray()).map((t) => t.eventId).filter(Boolean) as string[]), []) || new Set<string>()
+/** event id → how many tickets are saved for it */
+function useTicketCounts() {
+  return useLiveQuery(async () => {
+    const n = new Map<string, number>()
+    for (const t of await db.tickets.toArray()) if (t.eventId) n.set(t.eventId, (n.get(t.eventId) || 0) + 1)
+    return n
+  }, []) || new Map<string, number>()
 }
 
-function Countdown({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
+const ticketLabel = (n: number) => (n > 1 ? pl(n, ['билет', 'билета', 'билетов']) : 'Билет сохранён')
+
+function Countdown({ e, tickets }: { e: PlannedEvent; tickets: number }) {
   const nav = useNavigate()
   const d = daysUntil(e.date)
   return (
@@ -24,9 +31,9 @@ function Countdown({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
           <span style={{ width: 6, height: 6, borderRadius: 3, background: '#FF2E88', boxShadow: '0 0 8px #FF2E88' }} />
           СЛЕДУЮЩИЙ
         </div>
-        {hasTicket && (
+        {tickets > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 28, padding: '0 10px', borderRadius: 14, background: 'rgba(10,30,20,.5)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#6BF0B4', font: '600 12px var(--sans)' }}>
-            <CheckCircle2 size={15} />Билет сохранён
+            <CheckCircle2 size={15} />{ticketLabel(tickets)}
           </div>
         )}
       </div>
@@ -54,7 +61,8 @@ function Countdown({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
   )
 }
 
-function EventRow({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
+function EventRow({ e, tickets }: { e: PlannedEvent; tickets: number }) {
+  const hasTicket = tickets > 0
   const nav = useNavigate()
   return (
     <button className="card" onClick={() => nav(`/event/${e.id}`)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 12, textAlign: 'left', width: '100%' }}>
@@ -69,7 +77,7 @@ function EventRow({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
         </div>
         <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 11, font: '600 11px var(--sans)', background: hasTicket ? 'var(--okbg)' : 'var(--s2)', color: hasTicket ? 'var(--ok)' : 'var(--tx3)' }}>
           {hasTicket ? <CheckCircle2 size={13} /> : <MinusCircle size={13} />}
-          {hasTicket ? 'Билет сохранён' : 'Нет билета'}
+          {hasTicket ? ticketLabel(tickets) : 'Нет билета'}
         </div>
       </div>
       <ChevronRight size={20} color="var(--tx3)" />
@@ -95,7 +103,7 @@ export default function Upcoming() {
   const nav = useNavigate()
   const openSheet = useUI((s) => s.openSheet)
   const events = useLiveQuery(() => db.events.orderBy('date').toArray(), [])
-  const withTicket = useTicketEventIds()
+  const tickets = useTicketCounts()
   const own = useLiveQuery(hasOwnConcerts, [])
   const today = todayISO()
   const future = (events || []).filter((e) => e.date && e.date >= today)
@@ -133,21 +141,21 @@ export default function Upcoming() {
 
       <div style={{ padding: '6px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {past.map((e) => <PastPrompt key={e.id} e={e} />)}
-        {next && <Countdown e={next} hasTicket={withTicket.has(next.id)} />}
+        {next && <Countdown e={next} tickets={tickets.get(next.id) || 0} />}
         {later.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 4px 2px' }}>
             <span className="mono-label">Дальше</span>
             <span style={{ font: '500 12px var(--sans)', color: 'var(--tx3)' }}>{pl(later.length, ['концерт', 'концерта', 'концертов'])}</span>
           </div>
         )}
-        {later.map((e) => <EventRow key={e.id} e={e} hasTicket={withTicket.has(e.id)} />)}
+        {later.map((e) => <EventRow key={e.id} e={e} tickets={tickets.get(e.id) || 0} />)}
         {undated.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 4px 2px' }}>
             <span className="mono-label">Дата не назначена</span>
             <span style={{ font: '500 12px var(--sans)', color: 'var(--tx3)' }}>{pl(undated.length, ['концерт', 'концерта', 'концертов'])}</span>
           </div>
         )}
-        {undated.map((e) => <EventRow key={e.id} e={e} hasTicket={withTicket.has(e.id)} />)}
+        {undated.map((e) => <EventRow key={e.id} e={e} tickets={tickets.get(e.id) || 0} />)}
       </div>
     </div>
   )

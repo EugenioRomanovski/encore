@@ -17,7 +17,7 @@ export default function EventDetail() {
   const nav = useNavigate()
   const { openSheet, say } = useUI()
   const e = useLiveQuery(() => db.events.get(id!), [id])
-  const ticket = useLiveQuery(() => db.tickets.where('eventId').equals(id!).first(), [id])
+  const tickets = useLiveQuery(() => db.tickets.where('eventId').equals(id!).sortBy('createdAt'), [id])
 
   if (e === undefined) return null
   if (!e) {
@@ -140,20 +140,19 @@ export default function EventDetail() {
           </button>
         )}
 
-        {ticket ? (
-          <button className="card" onClick={() => nav(`/ticket/${ticket.id}`, { state: { from: `/event/${e.id}` } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', textAlign: 'left' }}>
+        {tickets?.map((t, i) => (
+          <button key={t.id} className="card" onClick={() => nav(`/ticket/${t.id}`, { state: { from: `/event/${e.id}` } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', textAlign: 'left' }}>
             <div style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: 'var(--grad2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ticket size={20} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ font: '600 15px var(--sans)' }}>Показать билет</div>
+              <div style={{ font: '600 15px var(--sans)' }}>{tickets.length > 1 ? `Билет ${i + 1}` : 'Показать билет'}</div>
               <div className="mono ellipsis" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx2)', marginTop: 3 }}>
-                {ticket.seat.length ? ticket.seat.map((s) => `${s.k} ${s.v}`).join(' · ') : ticket.fileName || 'Билет'}
+                {t.seat.length ? t.seat.map((s) => `${s.k} ${s.v}`).join(' · ') : t.fileName || 'Билет'}
               </div>
             </div>
             <ChevronRight size={20} color="var(--tx3)" />
           </button>
-        ) : (
-          <AttachTicket label="Привязать билет" onClick={() => openSheet('ticket', { eventId: e.id })} />
-        )}
+        ))}
+        {tickets && <AttachTicket label={tickets.length ? 'Добавить ещё билет' : 'Привязать билет'} onClick={() => openSheet('ticket', { eventId: e.id })} />}
 
         {e.friends && e.friends.length > 0 && (
           <div className="section" style={{ gap: 10 }}>

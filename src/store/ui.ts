@@ -16,6 +16,8 @@ export interface TicketDraft {
   seat: SeatField[]
   /** show title / venue / date / times read from the ticket, offered when creating a new event */
   hints?: TicketHints
+  /** further tickets picked together with this one; all go to the same concert */
+  more?: TicketDraft[]
 }
 
 /** Where a new ticket should be attached by default. */

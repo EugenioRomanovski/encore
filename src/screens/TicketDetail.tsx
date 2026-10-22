@@ -88,6 +88,12 @@ function CodeFullscreen({ t, i, file, onClose }: { t: Ticket; i: number; file?: 
   )
 }
 
+/** "Место 12" — how a ticket is told apart from the others for the same concert */
+function seatLabel(t: Ticket) {
+  const s = t.seat.find((x) => /МЕСТ|SEAT/i.test(x.k)) || t.seat[t.seat.length - 1]
+  return s ? `${s.k.charAt(0)}${s.k.slice(1).toLowerCase()} ${s.v}` : ''
+}
+
 export default function TicketDetail() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -102,6 +108,15 @@ export default function TicketDetail() {
   const [bigCode, setBigCode] = useState(false)
   const awake = useWakeLock(!!t)
   useCodes(t)
+  // other tickets for the same concert, to flip through at the gate
+  const siblings = useLiveQuery(
+    () => (t?.eventId ? db.tickets.where('eventId').equals(t.eventId).sortBy('createdAt') : t?.memoryId ? db.tickets.where('memoryId').equals(t.memoryId).sortBy('createdAt') : []),
+    [t?.eventId, t?.memoryId],
+  )
+  useEffect(() => {
+    setPage(0)
+    setCodeIdx(0)
+  }, [id])
 
   if (t === undefined) return null
   if (!t) {
@@ -184,6 +199,21 @@ export default function TicketDetail() {
           {awake ? 'Экран не погаснет' : 'Прибавьте яркость для сканера'}
         </div>
       </div>
+
+      {siblings && siblings.length > 1 && (
+        <div role="tablist" aria-label="Билеты на этот концерт" style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '14px 20px 0', scrollbarWidth: 'none', justifyContent: siblings.length <= 3 ? 'center' : 'flex-start' }}>
+          {siblings.map((s, i, all) => {
+            const on = s.id === t.id
+            const labels = all.map(seatLabel)
+            const label = labels.every(Boolean) && new Set(labels).size === labels.length ? labels[i] : `Билет ${i + 1}`
+            return (
+              <button key={s.id} role="tab" aria-selected={on} onClick={() => !on && nav(`/ticket/${s.id}`, { replace: true, state: loc.state })} style={{ flex: 'none', height: 34, padding: '0 14px', borderRadius: 17, font: '600 13px var(--sans)', background: on ? 'var(--tx)' : 'var(--s1)', color: on ? 'var(--bg)' : 'var(--tx2)', border: on ? 'none' : '1px solid var(--line)' }}>
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div style={{ margin: '14px 20px 0', borderRadius: 26, boxShadow: `0 30px 60px -30px ${p.glow}` }}>
         <div style={{ position: 'relative', padding: '20px 20px 26px', borderRadius: '26px 26px 0 0', color: '#fff', overflow: 'hidden', background: p.bg }}>
