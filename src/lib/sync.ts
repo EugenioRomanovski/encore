@@ -1,5 +1,6 @@
 import { createClient, type User } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { dropBroken, readBytes } from './media'
 import { db, enqueueAll, isDemoId, markRemote, outboxKey, setOutboxListener, type Media, type Memory, type OutboxItem, type PlannedEvent, type SyncedTable } from './db'
 
 /*
@@ -102,6 +103,29 @@ async function upload(p: string, blob: Blob) {
   if (error) throw error
 }
 
+const tooLarge = (e: unknown) => {
+  const x = e as { statusCode?: string | number; status?: number; message?: string }
+  return String(x?.statusCode ?? x?.status) === '413' || /maximum allowed size|too large/i.test(String(x?.message))
+}
+
+interface PushReport {
+  tooLarge: number
+  failed: number
+  /** ticket originals that could no longer be read on this device and were dropped */
+  dropped: string[]
+  /** photos/videos whose bytes are gone on this device — kept locally as they are, not retried */
+  unreadable: number
+}
+
+function reportMessage(r: PushReport) {
+  const out: string[] = []
+  if (r.dropped.length) out.push(`Оригинал билета «${r.dropped.join('», «')}» не читался на устройстве и убран — страницы билета сохранены.`)
+  if (r.unreadable) out.push(`Не читаются на устройстве файлов: ${r.unreadable} — в облако они не попадут.`)
+  if (r.tooLarge) out.push(`Слишком большие для облака файлы: ${r.tooLarge}. Они остаются на устройстве.`)
+  if (r.failed) out.push(`Не удалось загрузить файлов: ${r.failed}. Попробуем ещё раз при следующей синхронизации.`)
+  return out.join(' ') || null
+}
+
 /** What a friend receives when tagged on a concert: the facts of the show, never photos or notes. */
 async function sharePayload(kind: 'memory' | 'event', r: Memory | PlannedEvent) {
   const base = { artist: r.artist, tour: r.tour, venue: r.venue, date: r.date }
@@ -129,11 +153,11 @@ async function shareWithFriends(item: OutboxItem, rec: Memory | PlannedEvent | u
   if (error) throw error
 }
 
-/** Returns how many media files could not be uploaded (e.g. over the size limit). */
-async function push(uid: string): Promise<number> {
+/** Pushes local changes; reports media files that could not be uploaded. */
+async function push(uid: string): Promise<PushReport> {
   // files first: by the time a memory (and the card sent to friends) arrives, its photos are there
   const items = (await db.outbox.orderBy('at').toArray()).sort((a, b) => Number(a.table !== 'media') - Number(b.table !== 'media'))
-  let failed = 0
+  const report: PushReport = { tooLarge: 0, failed: 0, dropped: [], unreadable: 0 }
   const batch: { item: OutboxItem; row: Row }[] = []
   const flush = async () => {
     await upsert(uid, batch.map((b) => b.row))
@@ -145,10 +169,17 @@ async function push(uid: string): Promise<number> {
     if (item.table === 'media') {
       const m = await db.media.get(item.id)
       try {
-        if (m) {
-          await upload(path(uid, m.id), m.blob)
+        // read the bytes first: a file whose bytes were lost would otherwise go up empty and fail forever
+        const bytes = m && (await readBytes(m.blob))
+        if (m && !bytes) {
+          console.warn('media unreadable on this device', m.id)
+          const name = await dropBroken(m)
+          if (name) report.dropped.push(name)
+          else report.unreadable++
+        } else if (m && bytes) {
+          await upload(path(uid, m.id), new Blob([bytes], { type: m.blob.type }))
           if (m.thumb) await upload(path(uid, m.id, true), m.thumb)
-          const meta: MediaMeta = { kind: m.kind, type: m.blob.type, size: m.blob.size, takenAt: m.takenAt, createdAt: m.createdAt, thumbType: m.thumb?.type }
+          const meta: MediaMeta = { kind: m.kind, type: m.blob.type, size: bytes.byteLength, takenAt: m.takenAt, createdAt: m.createdAt, thumbType: m.thumb?.type }
           await upsert(uid, [{ kind, id: m.id, data: meta, deleted: false }])
         } else {
           await supabase.storage.from(BUCKET).remove([path(uid, item.id), path(uid, item.id, true)])
@@ -158,7 +189,8 @@ async function push(uid: string): Promise<number> {
       } catch (e) {
         if (isNetworkError(e)) throw e
         console.warn('media upload failed', item.id, e)
-        failed++
+        if (tooLarge(e)) report.tooLarge++
+        else report.failed++
       }
       continue
     }
@@ -168,7 +200,7 @@ async function push(uid: string): Promise<number> {
     if (batch.length >= 200) await flush()
   }
   await flush()
-  return failed
+  return report
 }
 
 // ---------- pull ----------
@@ -277,13 +309,13 @@ async function syncOnce() {
   if (!navigator.onLine) return set({ status: 'offline' })
   set({ status: 'syncing', error: null })
   try {
-    const failed = await push(user.id)
+    const message = reportMessage(await push(user.id))
     await pull(user.id)
     await downloadMissing(user.id)
     await afterSync(user.id)
     const now = Date.now()
     ls.set(lastKey(user.id), String(now))
-    set({ status: failed ? 'error' : 'idle', lastSync: now, error: failed ? `Не удалось загрузить файлов: ${failed}. Возможно, они слишком большие.` : null })
+    set({ status: message ? 'error' : 'idle', lastSync: now, error: message })
   } catch (e) {
     console.warn('sync failed', e)
     if (isNetworkError(e) || !navigator.onLine) set({ status: 'offline' })

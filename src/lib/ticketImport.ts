@@ -1,4 +1,4 @@
-import { resizeImage } from './media'
+import { ownCopy, resizeImage } from './media'
 import { readHints, readSeat } from './ticketText'
 import { db, uid, type Media, type Ticket } from './db'
 import type { TicketDraft } from '../store/ui'
@@ -7,8 +7,9 @@ import { paletteFor } from './palette'
 export async function draftFromPdf(file: File): Promise<TicketDraft> {
   // pdf.js is heavy — load it only when a PDF is actually imported
   const { renderPdf } = await import('./pdf')
-  const { pages, text, lines } = await renderPdf(file)
-  return { kind: 'pdf', pages, file, fileName: file.name, fileSize: file.size, text, seat: readSeat(text), hints: readHints(text, lines) }
+  const pdf = await ownCopy(file, file.type || 'application/pdf')
+  const { pages, text, lines } = await renderPdf(pdf)
+  return { kind: 'pdf', pages, file: pdf, fileName: file.name, fileSize: file.size, text, seat: readSeat(text), hints: readHints(text, lines) }
 }
 
 export async function draftFromImage(file: File): Promise<TicketDraft> {

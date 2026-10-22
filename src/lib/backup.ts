@@ -2,6 +2,7 @@ import { Unzip, UnzipInflate, Zip, ZipDeflate, ZipPassThrough, strFromU8, strToU
 import { db, type Media, type MediaKind, type Memory, type PlannedEvent, type Ticket } from './db'
 import { downloadBlob } from './ics'
 import { todayISO } from './format'
+import { dropBroken, readable } from './media'
 
 /*
  * Backup format 2: a ZIP archive.
@@ -82,6 +83,12 @@ function planPaths(media: Media[], memories: Memory[], events: PlannedEvent[], t
 }
 
 export async function buildBackup(): Promise<Blob> {
+  // files whose bytes were lost on this device can't go in the archive: a lost ticket original is
+  // dropped (the ticket keeps its pages), any other unreadable file is left out
+  const skip = new Set<string>()
+  for (const m of (await db.media.bulkGet(await db.media.toCollection().primaryKeys())) as Media[]) {
+    if (m && !(await readable(m)) && !(await dropBroken(m))) skip.add(m.id)
+  }
   const [memories, events, tickets, ids] = await Promise.all([
     db.memories.toArray(),
     db.events.toArray(),
@@ -89,7 +96,7 @@ export async function buildBackup(): Promise<Blob> {
     db.media.toCollection().primaryKeys(),
   ])
   // media metadata first (blobs stay disk-backed until read one by one below)
-  const media = (await db.media.bulkGet(ids)).filter(Boolean) as Media[]
+  const media = ((await db.media.bulkGet(ids)).filter(Boolean) as Media[]).filter((m) => !skip.has(m.id))
   const paths = planPaths(media, memories, events, tickets)
   const entries: MediaEntry[] = media.map((m) => ({
     id: m.id,

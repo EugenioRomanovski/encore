@@ -82,7 +82,7 @@ export async function prepareMedia(file: File): Promise<Media> {
   const isVideo = file.type.startsWith('video/')
   const now = Date.now()
   if (isVideo) {
-    return { id: uid(), blob: file, thumb: await videoThumb(file), kind: 'video', createdAt: now }
+    return { id: uid(), blob: await ownCopy(file), thumb: await videoThumb(file), kind: 'video', createdAt: now }
   }
   const [blob, thumb, takenAt] = await Promise.all([
     resizeImage(file, 2048, 'image/jpeg', 0.86),
@@ -126,3 +126,49 @@ export function pickFiles(accept: string, multiple = false, capture?: string): P
   })
 }
 
+
+/**
+ * A picked file copied into our own blob. iOS Safari may keep a picked File in IndexedDB by reference
+ * and later read it back empty, so the bytes are copied before storing.
+ */
+export async function ownCopy(file: Blob, type = file.type): Promise<Blob> {
+  return new Blob([await file.arrayBuffer()], { type: type || 'application/octet-stream' })
+}
+
+/** The bytes of a stored blob, or null if they can no longer be read (or there are none). */
+export async function readBytes(b: Blob): Promise<ArrayBuffer | null> {
+  if (!b.size) return null
+  try {
+    const buf = await b.arrayBuffer()
+    return buf.byteLength ? buf : null
+  } catch {
+    return null
+  }
+}
+
+/** Cheap check that a stored blob is still readable (full read for small ticket files). */
+export async function readable(m: Media): Promise<boolean> {
+  if (!m.blob.size) return false
+  try {
+    const buf = await (m.kind === 'file' ? m.blob : m.blob.slice(0, 1)).arrayBuffer()
+    return buf.byteLength > 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * A stored file whose bytes were lost. A ticket's original PDF is dropped (the ticket keeps its page
+ * images, so nothing visible is lost); returns the ticket file name for the message.
+ */
+export async function dropBroken(m: Media): Promise<string | undefined> {
+  if (m.kind !== 'file') return undefined
+  let name: string | undefined
+  await db.transaction('rw', db.media, db.tickets, async () => {
+    const ts = await db.tickets.filter((t) => t.fileId === m.id).toArray()
+    name = ts[0]?.fileName
+    for (const t of ts) await db.tickets.update(t.id, { fileId: undefined })
+    await db.media.delete(m.id)
+  })
+  return name || 'файл билета'
+}
