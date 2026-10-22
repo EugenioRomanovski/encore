@@ -29,11 +29,12 @@ export default function EventDetail() {
     )
   }
 
-  const d = daysUntil(e.date)
-  const past = d < 0
+  const dated = !!e.date
+  const d = dated ? daysUntil(e.date) : null
+  const past = d !== null && d < 0
 
   const share = async () => {
-    const text = `${e.artist} — ${e.venue}, ${stampDow(e.date).toLowerCase()}${e.show ? ', начало в ' + e.show : ''}`
+    const text = [e.artist, e.venue, dated && stampDow(e.date).toLowerCase(), e.show && 'начало в ' + e.show].filter(Boolean).join(', ').replace(', ', ' — ')
     try {
       if (navigator.share) await navigator.share({ title: e.artist, text })
       else {
@@ -69,7 +70,7 @@ export default function EventDetail() {
           </div>
         </div>
         <div style={{ position: 'absolute', left: 20, right: 20, bottom: 46, color: '#fff' }}>
-          {!past && (
+          {d !== null && !past && (
             <div style={{ display: 'inline-flex', alignItems: 'center', height: 26, padding: '0 10px', borderRadius: 13, background: 'linear-gradient(110deg,#FF2E88,#FF8A2B)', font: '700 12px var(--sans)' }}>{relDays(d)}</div>
           )}
           {e.tour && <div style={{ font: '500 11px var(--mono)', letterSpacing: '.18em', textTransform: 'uppercase', opacity: 0.85, marginTop: 12 }}>{e.tour}</div>}
@@ -91,9 +92,19 @@ export default function EventDetail() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr', gap: 8 }}>
           <div className="card" style={tile}>
-            <div className="mono-label" style={{ fontSize: 9 }}>{dow(e.date)}</div>
-            <div className="display" style={{ fontSize: 24, lineHeight: 1.1, marginTop: 6 }}>{dayNum(e.date)} {monShort(e.date)}</div>
-            <div style={{ font: '500 11px var(--sans)', color: 'var(--tx3)' }}>{year(e.date)}</div>
+            {dated ? (
+              <>
+                <div className="mono-label" style={{ fontSize: 9 }}>{dow(e.date)}</div>
+                <div className="display" style={{ fontSize: 24, lineHeight: 1.1, marginTop: 6 }}>{dayNum(e.date)} {monShort(e.date)}</div>
+                <div style={{ font: '500 11px var(--sans)', color: 'var(--tx3)' }}>{year(e.date)}</div>
+              </>
+            ) : (
+              <button onClick={() => nav(`/event/${e.id}/edit`)} style={{ textAlign: 'left' }}>
+                <div className="mono-label" style={{ fontSize: 9 }}>Дата</div>
+                <div className="display" style={{ fontSize: 24, lineHeight: 1.1, marginTop: 6 }}>—</div>
+                <div style={{ font: '600 11px var(--sans)', color: 'var(--mag)' }}>Указать</div>
+              </button>
+            )}
           </div>
           <div className="card" style={tile}>
             <div className="mono-label" style={{ fontSize: 9 }}>Двери</div>
@@ -105,7 +116,7 @@ export default function EventDetail() {
           </div>
         </div>
 
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+        {e.venue && <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
           <div style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: 'var(--s2)', color: 'var(--mag)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MapPin size={20} /></div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="mono-label" style={{ fontSize: 9 }}>Площадка</div>
@@ -116,9 +127,9 @@ export default function EventDetail() {
               <Navigation size={16} fill="#fff" />Маршрут
             </button>
           )}
-        </div>
+        </div>}
 
-        {!past && (
+        {dated && !past && (
           <button className="card" onClick={() => addToCalendar(e)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', textAlign: 'left' }}>
             <div style={{ width: 40, height: 40, flex: 'none', borderRadius: 12, background: 'rgba(123,97,255,.18)', color: 'var(--vi)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><BellRing size={20} /></div>
             <div style={{ flex: 1 }}>

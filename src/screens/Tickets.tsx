@@ -68,8 +68,9 @@ export default function Tickets() {
   const [exp, setExp] = useState<string | null>(null)
   const all = useLiveQuery(() => db.tickets.orderBy('date').toArray(), [])
   const today = todayISO()
-  const up = (all || []).filter((t) => t.date >= today)
-  const past = (all || []).filter((t) => t.date < today).reverse()
+  // a ticket for a plan without a date yet counts as upcoming
+  const up = (all || []).filter((t) => !t.date || t.date >= today)
+  const past = (all || []).filter((t) => t.date && t.date < today).reverse()
   const list = seg === 'up' ? up : past
 
   return (

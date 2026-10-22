@@ -52,7 +52,12 @@ export default function TicketAssign() {
   const [seat, setSeat] = useState<SeatField[]>(fillSeat([]))
 
   const text = draft?.text || ''
-  const matchId = useMemo(() => (text && data ? data.find((r) => textMentions(text, r.artist))?.id : undefined), [text, data])
+  const hints = existing ? undefined : draft?.hints
+  // a plan/memory matches if the ticket names its artist, or failing that, its date
+  const matchId = useMemo(() => {
+    if (!data) return undefined
+    return (text && data.find((r) => textMentions(text, r.artist))?.id) || data.find((r) => r.date && hints?.dates.includes(r.date))?.id
+  }, [text, data, hints])
 
   useEffect(() => {
     if (!ticketId && !draft) nav('/tickets', { replace: true })
@@ -72,7 +77,7 @@ export default function TicketAssign() {
       find(existing?.eventId) || find(existing?.memoryId) ||
       find(target.eventId) || find(target.memoryId) ||
       find(matchId) ||
-      data.find((r) => r.kind === 'event' && !r.taken && r.date >= todayISO())
+      data.find((r) => r.kind === 'event' && !r.taken && (!r.date || r.date >= todayISO()))
     if (r) setChoice({ kind: r.kind, id: r.id })
   }, [data, choice, selectEventId, existing, target, matchId])
 
@@ -83,7 +88,8 @@ export default function TicketAssign() {
   const upcoming = (data || []).filter((r) => r.kind === 'event')
   const memories = (data || []).filter((r) => r.kind === 'memory')
   const chosen = data?.find((r) => choice && r.id === choice.id)
-  const readSomething = (draft?.seat.length || 0) > 0 || !!matchId
+  const readSomething = (draft?.seat.length || 0) > 0 || !!matchId || !!hints?.artists.length || !!hints?.dates.length
+  const readLine = [hints?.artists[0], hints?.dates[0] && stamp(hints.dates[0]), hints?.venues[0]].filter(Boolean).join(' · ')
 
   const save = async () => {
     if (!chosen) return
@@ -162,7 +168,7 @@ export default function TicketAssign() {
             <div className="auto-badge">{readSomething ? <><Sparkles size={12} />МЫ ПРОЧИТАЛИ</> : 'БИЛЕТ'}</div>
             <div className="display ellipsis" style={{ fontSize: 24, lineHeight: 1, marginTop: 6 }}>{chosen?.artist || draft?.fileName || existing?.artist || 'Билет'}</div>
             <div className="mono ellipsis" style={{ fontSize: 12, fontWeight: 500, color: 'var(--tx2)', marginTop: 4 }}>
-              {[chosen && stamp(chosen.date), ...seat.filter((s) => s.v).map((s) => `${s.k} ${s.v}`)].filter(Boolean).join(' · ') || 'Выберите концерт ниже'}
+              {[chosen && chosen.date && stamp(chosen.date), ...seat.filter((s) => s.v).map((s) => `${s.k} ${s.v}`)].filter(Boolean).join(' · ') || 'Выберите концерт ниже'}
             </div>
           </div>
         </div>
@@ -184,7 +190,11 @@ export default function TicketAssign() {
           {upcoming.length > 0 && <span className="mono-label">Планы</span>}
           {upcoming.map(row)}
           <button className="dashed-btn" style={{ justifyContent: 'flex-start', padding: '0 14px' }} onClick={() => nav('/event/new', { state: { returnTo: loc.pathname + loc.search } })}>
-            <PlusCircle size={20} />Создать новое событие
+            <PlusCircle size={20} style={{ flex: 'none' }} />
+            <span style={{ textAlign: 'left', minWidth: 0 }}>
+              Создать новое событие
+              {readLine && !matchId && <span className="ellipsis" style={{ display: 'block', font: '500 12px var(--sans)', color: 'var(--mag)', marginTop: 2 }}>Из билета: {readLine}</span>}
+            </span>
           </button>
           {memories.length > 0 && <span className="mono-label" style={{ marginTop: 10 }}>Воспоминания</span>}
           {memories.map(row)}

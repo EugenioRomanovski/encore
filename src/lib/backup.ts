@@ -71,9 +71,9 @@ function planPaths(media: Media[], memories: Memory[], events: PlannedEvent[], t
     const dir = `Воспоминания/${m.date} ${clean(m.artist)}`
     m.mediaIds.forEach((id, i) => take(id, `${dir}/${pad(i + 1)}`))
   }
-  for (const e of events) if (e.coverId) take(e.coverId, `Планы/${e.date} ${clean(e.artist)}/обложка`)
+  for (const e of events) if (e.coverId) take(e.coverId, `Планы/${e.date || 'без даты'} ${clean(e.artist)}/обложка`)
   for (const t of tickets) {
-    const dir = `Билеты/${t.date} ${clean(t.artist)}`
+    const dir = `Билеты/${t.date || 'без даты'} ${clean(t.artist)}`
     t.pageIds.forEach((id, i) => take(id, `${dir}/страница ${i + 1}`))
     if (t.fileId) take(t.fileId, `${dir}/${clean((t.fileName || 'билет').replace(/\.[a-z0-9]{2,4}$/i, ''))}`)
   }
@@ -144,6 +144,13 @@ async function saveRecords(m: Pick<Manifest, 'memories' | 'events' | 'tickets'>)
   })
 }
 
+async function sameBytes(a: Blob, b: Uint8Array) {
+  if (a.size !== b.length) return false
+  const x = new Uint8Array(await a.arrayBuffer())
+  for (let i = 0; i < x.length; i++) if (x[i] !== b[i]) return false
+  return true
+}
+
 async function restoreZip(file: Blob): Promise<RestoreResult> {
   const before = new Set(await db.media.toCollection().primaryKeys())
   const written: string[] = []
@@ -151,6 +158,7 @@ async function restoreZip(file: Blob): Promise<RestoreResult> {
   let byPath = new Map<string, { entry: MediaEntry; thumb: boolean }>()
   const got = new Set<string>()
   const earlyThumbs = new Map<string, Blob>()
+  const deferred = new Map<string, { blob?: Blob; thumb?: Blob }>()
   const queue: { name: string; data: Uint8Array }[] = []
   let streamError: Error | null = null
 
@@ -191,13 +199,24 @@ async function restoreZip(file: Blob): Promise<RestoreResult> {
       const expected = thumb ? entry.thumb!.size : entry.size
       if (data.length !== expected) throw new BackupError(`Архив повреждён: ${name}`)
       const blob = new Blob([data as BlobPart], { type: thumb ? entry.thumb!.type : entry.type })
-      if (thumb) {
+      if (before.has(entry.id)) {
+        // already on this device: never touch it mid-restore (a broken archive must leave it as it was);
+        // identical bytes are skipped, anything different is applied only once the whole archive checks out
+        const cur = await db.media.get(entry.id)
+        const curBlob = thumb ? cur?.thumb : cur?.blob
+        if (!curBlob || !(await sameBytes(curBlob, data))) {
+          const d = deferred.get(entry.id) || {}
+          if (thumb) d.thumb = blob
+          else d.blob = blob
+          deferred.set(entry.id, d)
+        }
+      } else if (thumb) {
         // the preview normally follows its file; keep it aside if the order was changed
         if (!(await db.media.update(entry.id, { thumb: blob })) || !got.has(entry.path)) earlyThumbs.set(entry.id, blob)
       } else {
         const m: Media = { id: entry.id, blob, thumb: earlyThumbs.get(entry.id), kind: entry.kind, takenAt: entry.takenAt, createdAt: entry.createdAt }
         await db.media.put(m)
-        if (!before.has(entry.id)) written.push(entry.id)
+        written.push(entry.id)
       }
       got.add(name)
     }
@@ -219,6 +238,17 @@ async function restoreZip(file: Blob): Promise<RestoreResult> {
     const m = manifest as Manifest
     const missing = [...byPath.keys()].filter((p) => !got.has(p))
     if (missing.length) throw new BackupError(`Архив повреждён: не хватает файлов (${missing.length})`)
+    // archive is complete: now replace files that differed from the ones already here
+    if (deferred.size) {
+      const meta = new Map(m.media.map((e) => [e.id, e]))
+      await db.transaction('rw', db.media, async () => {
+        for (const [id, d] of deferred) {
+          const cur = await db.media.get(id)
+          const e = meta.get(id)!
+          await db.media.put({ id, kind: e.kind, takenAt: e.takenAt, createdAt: e.createdAt, blob: d.blob || cur!.blob, thumb: d.thumb || cur?.thumb })
+        }
+      })
+    }
     await saveRecords(m)
     return { memories: m.memories.length, events: m.events.length, tickets: m.tickets.length, media: m.media.length }
   } catch (e) {

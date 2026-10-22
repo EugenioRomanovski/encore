@@ -25,29 +25,37 @@ export function toHM(d: Date) {
 const p2 = (n: number) => String(n).padStart(2, '0')
 
 /** "14 ИЮН 2025" — ticket-print style */
+/** Plans may have no date yet ("" or undefined); every formatter below copes with that. */
+export const hasDate = (s?: string | null): s is string => !!s
+export const NO_DATE = 'ДАТА НЕ НАЗНАЧЕНА'
+
 export const stamp = (s: string) => {
+  if (!s) return NO_DATE
   const d = parseDate(s)
   return `${p2(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`
 }
 /** "СБ 14 ИЮН 2025" */
-export const stampDow = (s: string) => `${WD[parseDate(s).getDay()]} ${stamp(s)}`
+export const stampDow = (s: string) => (s ? `${WD[parseDate(s).getDay()]} ${stamp(s)}` : NO_DATE)
 /** "СБ 14 ИЮН" */
 export const stampShort = (s: string) => {
+  if (!s) return 'БЕЗ ДАТЫ'
   const d = parseDate(s)
   return `${WD[d.getDay()]} ${p2(d.getDate())} ${MON[d.getMonth()]}`
 }
-export const dow = (s: string) => WD[parseDate(s).getDay()]
-export const dowLong = (s: string) => WD_LONG[parseDate(s).getDay()]
-export const monShort = (s: string) => MON[parseDate(s).getMonth()]
-export const dayNum = (s: string) => p2(parseDate(s).getDate())
+export const dow = (s: string) => (s ? WD[parseDate(s).getDay()] : 'ДАТА')
+export const dowLong = (s: string) => (s ? WD_LONG[parseDate(s).getDay()] : '')
+export const monShort = (s: string) => (s ? MON[parseDate(s).getMonth()] : '—')
+export const dayNum = (s: string) => (s ? p2(parseDate(s).getDate()) : '?')
 export const year = (s: string) => parseDate(s).getFullYear()
 /** "14 июня 2025" */
 export const longDate = (s: string) => {
+  if (!s) return 'без даты'
   const d = parseDate(s)
   return `${d.getDate()} ${MON_GEN[d.getMonth()]} ${d.getFullYear()}`
 }
 /** "14 июня" */
 export const dayMonth = (s: string) => {
+  if (!s) return 'без даты'
   const d = parseDate(s)
   return `${d.getDate()} ${MON_GEN[d.getMonth()]}`
 }

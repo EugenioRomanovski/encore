@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { CalendarDays, DoorOpen, ImagePlus, MapPin, Mic, Music, X } from 'lucide-react'
+import { CalendarDays, DoorOpen, ImagePlus, MapPin, Mic, Music, Sparkles, X } from 'lucide-react'
 import { db, deleteMedia, uid, type FriendRef, type PlannedEvent, type ShareOrigin } from '../lib/db'
 import { pickFiles, saveImageAsMedia } from '../lib/media'
-import { todayISO } from '../lib/format'
+import { longDate, todayISO } from '../lib/format'
 import { paletteFor } from '../lib/palette'
 import { useSuggestions } from '../lib/suggest'
 import { Cover } from '../components/Cover'
@@ -21,6 +21,10 @@ export default function EventForm() {
   const [params] = useSearchParams()
   const shareId = params.get('share')
   const { say, setBusy } = useUI()
+  // creating a plan for a ticket being added: offer what was read from the ticket
+  const draft = useUI((s) => s.draft)
+  const hints = !id && returnTo?.startsWith('/tickets/assign') ? draft?.hints : undefined
+  const hasHints = !!hints && (hints.artists.length + hints.tours.length + hints.venues.length + hints.dates.length > 0 || !!hints.doors || !!hints.show)
   const sugg = useSuggestions()
   const editing = !!id
 
@@ -73,7 +77,8 @@ export default function EventForm() {
     }
   }
 
-  const valid = artist.trim() && venue.trim() && date
+  // only the name is required; venue, date and times can be filled in later
+  const valid = !!artist.trim()
 
   const cancel = async () => {
     await deleteMedia(newCovers)
@@ -139,30 +144,64 @@ export default function EventForm() {
           )}
         </Cover>
 
+        {hasHints && (
+          <div style={{ padding: 1.5, borderRadius: 20, background: 'linear-gradient(110deg,#FF2E88,#FF8A2B)' }}>
+            <div style={{ borderRadius: 18.5, background: 'var(--s1)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 36, height: 36, flex: 'none', borderRadius: 18, background: 'var(--grad2)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={18} /></div>
+              <div style={{ flex: 1, font: '400 13px/1.4 var(--sans)', color: 'var(--tx2)' }}>
+                <div style={{ font: '700 15px var(--sans)', color: 'var(--tx)' }}>Мы прочитали билет</div>
+                Нажмите на вариант под полем или заполните всё сразу
+              </div>
+              <button
+                className="btn btn-primary btn-sm"
+                style={{ flex: 'none', height: 36, padding: '0 12px', fontSize: 13 }}
+                onClick={() => {
+                  // fill only what's still empty
+                  if (!artist && hints!.artists[0]) setArtist(hints!.artists[0])
+                  if (!tour && hints!.tours[0]) setTour(hints!.tours[0])
+                  if (!venue && hints!.venues[0]) setVenue(hints!.venues[0])
+                  if (!date && hints!.dates[0]) setDate(hints!.dates[0])
+                  if (!doors && hints!.doors) setDoors(hints!.doors)
+                  if (!show && hints!.show) setShow(hints!.show)
+                }}
+              >
+                Заполнить
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="section" style={{ gap: 8 }}>
-          <Label>Артист</Label>
-          <div className="field"><Mic size={20} /><input list="artists" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Кого идёте смотреть?" autoCapitalize="words" /></div>
+          <Label>Название</Label>
+          <div className="field"><Mic size={20} /><input list="artists" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Артист или концерт" autoCapitalize="words" /></div>
+          <FromTicket values={hints?.artists} current={artist} onPick={setArtist} />
         </div>
         <div className="section" style={{ gap: 8 }}>
           <Label>Тур или фестиваль</Label>
           <div className="field"><Music size={20} /><input value={tour} onChange={(e) => setTour(e.target.value)} placeholder="Необязательно" /></div>
+          <FromTicket values={hints?.tours} current={tour} onPick={setTour} />
         </div>
         <div className="section" style={{ gap: 8 }}>
           <Label>Площадка</Label>
-          <div className="field"><MapPin size={20} /><input list="venues" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Клуб, арена, стадион…" /></div>
+          <div className="field"><MapPin size={20} /><input list="venues" value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Клуб, арена, стадион… — необязательно" /></div>
+          <FromTicket values={hints?.venues} current={venue} onPick={setVenue} />
         </div>
         <div className="section" style={{ gap: 8 }}>
           <Label>Дата</Label>
-          <div className="field"><CalendarDays size={20} /><input type="date" value={date} min={editing ? undefined : todayISO()} onChange={(e) => setDate(e.target.value)} /></div>
+          <div className="field"><CalendarDays size={20} /><input type="date" value={date} min={editing || hints ? undefined : todayISO()} onChange={(e) => setDate(e.target.value)} /></div>
+          <FromTicket values={hints?.dates} current={date} onPick={setDate} format={longDate} />
+          {!date && !hints?.dates.length && <div className="hint">Необязательно — можно указать позже</div>}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div className="section" style={{ gap: 8 }}>
             <Label>Двери</Label>
             <div className="field"><DoorOpen size={20} /><input type="time" value={doors} onChange={(e) => setDoors(e.target.value)} /></div>
+            <FromTicket values={hints?.doors ? [hints.doors] : undefined} current={doors} onPick={setDoors} />
           </div>
           <div className="section" style={{ gap: 8 }}>
             <Label>Начало</Label>
             <div className="field"><Music size={20} /><input type="time" value={show} onChange={(e) => setShow(e.target.value)} /></div>
+            <FromTicket values={hints?.show ? [hints.show] : undefined} current={show} onPick={setShow} />
           </div>
         </div>
         <FriendsSection value={friends} onChange={setFriends} />
@@ -183,6 +222,22 @@ function FriendsSection({ value, onChange }: { value: FriendRef[]; onChange: (v:
     <div className="section" style={{ gap: 8 }}>
       <Label>С кем идёте</Label>
       <FriendPicker value={value} onChange={onChange} />
+    </div>
+  )
+}
+
+/** Values read from the ticket, offered under a field ("из билета"). */
+function FromTicket({ values, current, onPick, format }: { values?: string[]; current: string; onPick: (v: string) => void; format?: (v: string) => string }) {
+  const left = (values || []).filter((v) => v.toLowerCase() !== current.trim().toLowerCase())
+  if (!left.length) return null
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span className="auto-badge"><Sparkles size={11} />ИЗ БИЛЕТА</span>
+      {left.map((v) => (
+        <button key={v} type="button" onClick={() => onPick(v)} style={{ maxWidth: '100%', height: 30, padding: '0 12px', borderRadius: 15, border: '1px solid rgba(255,46,136,.45)', background: 'var(--af)', color: 'var(--tx)', font: '500 13px var(--sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {format ? format(v) : v}
+        </button>
+      ))}
     </div>
   )
 }

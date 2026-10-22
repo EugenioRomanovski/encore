@@ -11,7 +11,7 @@ import { AccountCard } from '../components/AccountCard'
 import { Portal } from '../components/Portal'
 import { FriendsCard } from '../components/FriendsCard'
 import { pushDisplayName, removeAvatar, setAvatar, useMyAvatar, useSocial } from '../lib/social'
-import { squareImage } from '../lib/media'
+import { AvatarCropper } from '../components/AvatarCropper'
 import { useState } from 'react'
 import { Camera, ImagePlus } from 'lucide-react'
 import { signOutAndWipe, useSync } from '../lib/sync'
@@ -39,14 +39,19 @@ export default function Profile() {
   const username = useSocial((s) => s.profile?.username)
   const avatar = useMyAvatar()
   const [avatarSheet, setAvatarSheet] = useState(false)
+  const [cropFile, setCropFile] = useState<File | null>(null)
 
   const pickAvatar = async () => {
     setAvatarSheet(false)
     const [f] = await pickFiles('image/*')
-    if (!f) return
+    if (f) setCropFile(f) // position & zoom in the round frame first
+  }
+
+  const saveAvatar = async (square: Blob) => {
+    setCropFile(null)
     setBusy('Сохраняем фото…')
     try {
-      await setAvatar(await squareImage(f))
+      await setAvatar(square)
       say('Фото профиля обновлено')
     } catch (e) {
       console.warn(e)
@@ -244,6 +249,7 @@ export default function Profile() {
           <div className="mono" style={{ textAlign: 'center', fontSize: 10, fontWeight: 500, letterSpacing: '.16em', color: 'var(--tx3)', padding: '14px 0 0' }}>ENCORE 0.1</div>
         </div>
       </div>
+      {cropFile && <AvatarCropper file={cropFile} onCancel={() => setCropFile(null)} onDone={saveAvatar} />}
       {avatarSheet && (
         <Portal>
           <div className="backdrop" onClick={() => setAvatarSheet(false)} />

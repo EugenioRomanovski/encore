@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { SeatField, TicketKind } from '../lib/db'
+import type { TicketHints } from '../lib/ticketText'
 
 export type Theme = 'dark' | 'light'
 export type SheetKind = null | 'plus' | 'ticket'
@@ -13,6 +14,8 @@ export interface TicketDraft {
   fileSize?: number
   text?: string
   seat: SeatField[]
+  /** show title / venue / date / times read from the ticket, offered when creating a new event */
+  hints?: TicketHints
 }
 
 /** Where a new ticket should be attached by default. */

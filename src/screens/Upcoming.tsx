@@ -43,7 +43,7 @@ function Countdown({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
           )}
         </div>
         <div className="display" style={{ fontSize: 42, lineHeight: 0.95, marginTop: 16, overflowWrap: 'anywhere' }}>{e.artist}</div>
-        <div className="ellipsis" style={{ font: '500 14px var(--sans)', opacity: 0.88, marginTop: 6 }}>{e.venue}</div>
+        {e.venue && <div className="ellipsis" style={{ font: '500 14px var(--sans)', opacity: 0.88, marginTop: 6 }}>{e.venue}</div>}
         <div style={{ display: 'flex', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
           <div className="stamp">{stampShort(e.date)}</div>
           {e.doors && <div className="stamp">ДВЕРИ {e.doors}</div>}
@@ -64,7 +64,9 @@ function EventRow({ e, hasTicket }: { e: PlannedEvent; hasTicket: boolean }) {
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
         <div className="display ellipsis" style={{ fontSize: 22, lineHeight: 1 }}>{e.artist}</div>
-        <div className="ellipsis" style={{ font: '400 13px var(--sans)', color: 'var(--tx2)' }}>{e.venue} · {pl(daysUntil(e.date), ['день', 'дня', 'дней'])}</div>
+        <div className="ellipsis" style={{ font: '400 13px var(--sans)', color: 'var(--tx2)' }}>
+          {[e.venue, e.date ? pl(daysUntil(e.date), ['день', 'дня', 'дней']) : 'дата не назначена'].filter(Boolean).join(' · ')}
+        </div>
         <div style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 11, font: '600 11px var(--sans)', background: hasTicket ? 'var(--okbg)' : 'var(--s2)', color: hasTicket ? 'var(--ok)' : 'var(--tx3)' }}>
           {hasTicket ? <CheckCircle2 size={13} /> : <MinusCircle size={13} />}
           {hasTicket ? 'Билет сохранён' : 'Нет билета'}
@@ -96,8 +98,9 @@ export default function Upcoming() {
   const withTicket = useTicketEventIds()
   const own = useLiveQuery(hasOwnConcerts, [])
   const today = todayISO()
-  const future = (events || []).filter((e) => e.date >= today)
-  const past = (events || []).filter((e) => e.date < today).reverse()
+  const future = (events || []).filter((e) => e.date && e.date >= today)
+  const past = (events || []).filter((e) => e.date && e.date < today).reverse()
+  const undated = (events || []).filter((e) => !e.date)
   const [next, ...later] = future
 
   return (
@@ -138,6 +141,13 @@ export default function Upcoming() {
           </div>
         )}
         {later.map((e) => <EventRow key={e.id} e={e} hasTicket={withTicket.has(e.id)} />)}
+        {undated.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '16px 4px 2px' }}>
+            <span className="mono-label">Дата не назначена</span>
+            <span style={{ font: '500 12px var(--sans)', color: 'var(--tx3)' }}>{pl(undated.length, ['концерт', 'концерта', 'концертов'])}</span>
+          </div>
+        )}
+        {undated.map((e) => <EventRow key={e.id} e={e} hasTicket={withTicket.has(e.id)} />)}
       </div>
     </div>
   )
