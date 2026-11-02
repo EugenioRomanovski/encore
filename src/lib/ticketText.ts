@@ -19,7 +19,7 @@ export function readSeat(text: string): SeatField[] {
   return out
 }
 
-const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, ' ').trim()
+export const norm = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, ' ').trim()
 
 /** Does the ticket text mention this artist? */
 export function textMentions(text: string, artist: string) {

@@ -100,6 +100,9 @@ export default function MemoryForm() {
 
   useEffect(() => {
     ;(async () => {
+      const sh = shareId ? findShare(shareId) : undefined
+      // what we already have for this concert, when a friend's card is merged into it
+      let base: { tour?: string; venue: string; time?: string; genres: string[]; setlist: string[]; imported?: string[] } | undefined
       if (editing) {
         const m = await db.memories.get(id!)
         if (!m) return nav('/', { replace: true })
@@ -109,27 +112,43 @@ export default function MemoryForm() {
         setRating(m.rating); setNotes(m.notes); setPeople(m.people); setGenres(m.genres)
         setSetlist(setlistToText(m.setlist, m.encoreAt))
         setFriends(m.friends || []); setOrigin(m.sharedFrom); setSharePhotos(m.sharePhotos !== false)
+        base = { tour: m.tour, venue: m.venue, time: m.time, genres: m.genres, setlist: m.setlist, imported: m.importedPhotos }
       } else if (fromEvent) {
         const e = await db.events.get(fromEvent)
         if (e) {
           setArtist(e.artist); setTour(e.tour || ''); setVenue(e.venue); setDate(e.date); setTime(e.show || '')
           setNotes(e.notes)
           setFriends(e.friends || []); setOrigin(e.sharedFrom)
+          base = { tour: e.tour, venue: e.venue, time: e.show, genres: [], setlist: [] }
         }
-      } else if (shareId) {
+      }
+      if (sh && base) {
+        // a friend's card for a concert we already have: they join the company, their details fill the gaps
+        const p = sh.payload
+        if (!base.tour && p.tour) setTour(p.tour)
+        if (!base.venue && p.venue) setVenue(p.venue)
+        if (!base.time && (p.time || p.show)) setTime(p.time || p.show || '')
+        if (p.genres?.length) setGenres((g) => [...g, ...p.genres!.filter((x) => !g.includes(x))])
+        if (!base.setlist.length && p.setlist?.length) setSetlist(setlistToText(p.setlist, p.encoreAt ?? null))
+        setFriends((f) => (f.some((x) => x.id === sh.from.id) ? f : [...f, { id: sh.from.id, username: sh.from.username, name: sh.from.name, avatar: sh.from.avatar }]))
+        setOrigin((o) => o || { shareId: sh.id, userId: sh.from.id, username: sh.from.username })
+        const fresh = (p.photos || []).filter((x) => !base!.imported?.includes(x))
+        if (fresh.length) {
+          setCard(sh)
+          setFriendSel(new Set(fresh))
+          setStep('pick') // let them choose which of the friend's photos to add
+        }
+      } else if (sh && !editing && !fromEvent) {
         // a friend tagged us on this concert: start from their card, with them as company
-        const sh = findShare(shareId)
-        if (sh) {
-          const p = sh.payload
-          setArtist(p.artist); setTour(p.tour || ''); setVenue(p.venue); setDate(p.date); setTime(p.time || p.show || '')
-          setGenres(p.genres || [])
-          if (p.setlist?.length) setSetlist(setlistToText(p.setlist, p.encoreAt ?? null))
-          setFriends([{ id: sh.from.id, username: sh.from.username, name: sh.from.name }])
-          setOrigin({ shareId: sh.id, userId: sh.from.id, username: sh.from.username })
-          if (p.photos?.length) {
-            setCard(sh)
-            setFriendSel(new Set(p.photos))
-          }
+        const p = sh.payload
+        setArtist(p.artist); setTour(p.tour || ''); setVenue(p.venue); setDate(p.date); setTime(p.time || p.show || '')
+        setGenres(p.genres || [])
+        if (p.setlist?.length) setSetlist(setlistToText(p.setlist, p.encoreAt ?? null))
+        setFriends([{ id: sh.from.id, username: sh.from.username, name: sh.from.name }])
+        setOrigin({ shareId: sh.id, userId: sh.from.id, username: sh.from.username })
+        if (p.photos?.length) {
+          setCard(sh)
+          setFriendSel(new Set(p.photos))
         }
       }
       setLoaded(true)
@@ -236,8 +255,9 @@ export default function MemoryForm() {
           }
         }
       })
-      if (shareId && origin) setShareStatus(shareId, 'added')
+      if (shareId) setShareStatus(shareId, 'added')
       say(
+        shareId && (editing || fromEvent) ? 'Объединено — концерт друга добавлен к вашему' :
         copyFailed
           ? 'Сохранено, но фото друга не загрузились — добавьте их позже на странице воспоминания'
           : editing ? 'Изменения сохранены' : friends.length ? 'Воспоминание сохранено — друзья увидят концерт у себя' : 'Воспоминание сохранено',

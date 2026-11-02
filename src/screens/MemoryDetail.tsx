@@ -12,6 +12,7 @@ import { AttachTicket, TicketStub } from '../components/TicketStub'
 import { useMedia } from '../lib/hooks'
 import { useUI } from '../store/ui'
 import { FriendPhotosSection } from '../components/FriendPhotosSection'
+import { DuplicateBanner } from '../components/DuplicateBanner'
 
 function GalleryTile({ id, palette, i, more, big, onOpen }: { id: string; palette: number; i: number; more: number; big: boolean; onOpen: () => void }) {
   const m = useMedia(id)
@@ -103,6 +104,7 @@ export default function MemoryDetail() {
       </Cover>
 
       <div style={{ position: 'relative', marginTop: -26, borderRadius: '28px 28px 0 0', background: 'var(--bg)', padding: '22px 20px 20px', display: 'flex', flexDirection: 'column', gap: 30 }}>
+        <DuplicateBanner kind="memory" rec={m} />
         {m.genres.length > 0 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {m.genres.map((g, i) => <Tag key={g} label={g} i={i} />)}

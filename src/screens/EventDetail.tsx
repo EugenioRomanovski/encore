@@ -9,6 +9,7 @@ import { Avatar, Label } from '../components/ui'
 import { Menu } from '../components/Menu'
 import { AttachTicket } from '../components/TicketStub'
 import { useUI } from '../store/ui'
+import { DuplicateBanner } from '../components/DuplicateBanner'
 
 const tile = { padding: 12, borderRadius: 16 } as const
 
@@ -128,6 +129,8 @@ export default function EventDetail() {
             </button>
           )}
         </div>}
+
+        <DuplicateBanner kind="event" rec={e} />
 
         {dated && !past && (
           <button className="card" onClick={() => addToCalendar(e)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', textAlign: 'left' }}>
