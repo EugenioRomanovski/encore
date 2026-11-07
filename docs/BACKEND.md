@@ -24,9 +24,9 @@
 - `media` — Encore (историческое имя без префикса): фото, видео, PDF, `<user id>/<media id>`.
 - `winenote-rec-photos` — Wine Note: фото рекомендаций, `<sender id>/<recommendation id>.jpg`.
 
-Схемы приложений открыты для Data API настройкой роли `authenticator`
-(`pgrst.db_schemas = 'public, graphql_public, encore, winenote'`). В панели это же место —
-Project Settings → Data API → Exposed schemas; **держите оба списка одинаковыми**.
+Схемы приложений открыты для Data API в панели: Project Settings → Data API → Exposed schemas
+(сейчас `public`, `graphql_public`, `encore`, `winenote`; `private` — нет). Это единственное место
+настройки: `alter role authenticator set pgrst.db_schemas` не использовать — он перекрывает панель.
 
 В клиенте общее берётся напрямую, своё — через схему приложения:
 
@@ -58,7 +58,6 @@ supabase.schema('winenote').rpc('my_recommendations')
    ```sql
    create schema myapp;
    grant usage on schema myapp to anon, authenticated, service_role;
-   alter role authenticator set pgrst.db_schemas = 'public, graphql_public, encore, winenote, myapp';
    create table myapp.items (
      id uuid primary key default gen_random_uuid(),
      user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
@@ -70,10 +69,9 @@ supabase.schema('winenote').rpc('my_recommendations')
      using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
    revoke all on myapp.items from anon, authenticated;
    grant select, insert, update, delete on myapp.items to authenticated;
-   notify pgrst, 'reload config';
    notify pgrst, 'reload schema';
    ```
-   и добавить `myapp` в Exposed schemas в панели.
+   и отметить `myapp` в Exposed schemas в панели (Project Settings → Data API).
 2. В приложении — тот же URL и публичный ключ, свой `storageKey` для сессии,
    `supabase.schema('myapp')` для своих таблиц.
 3. Вход: `signInWithOtp({ email, options: { emailRedirectTo: <адрес приложения> } })`; адрес добавить
