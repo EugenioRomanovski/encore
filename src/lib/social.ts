@@ -2,18 +2,20 @@ import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 import { uid as newId, type FriendRef, type Media } from './db'
 import { resizeImage } from './media'
-import { setAfterSync, supabase, useSync } from './sync'
+import { encore, setAfterSync, supabase, useSync } from './sync'
 import { useUI } from '../store/ui'
 
 /*
- * Profiles, friends and concert cards shared between friends (Supabase tables: profiles,
- * friendships, shares; actions that touch two accounts go through RPC functions).
+ * Profiles, friends and concert cards shared between friends. Profiles and friendships are shared
+ * with the author's other apps (schema `public`); concert cards live in `encore.shares`.
+ * Actions that touch two accounts go through RPC functions.
  * Everything here is cached in localStorage so the lists still show offline.
  */
 
 export interface Profile {
   user_id: string
-  username: string
+  /** null: the account was created in another app and has no username yet */
+  username: string | null
   display_name: string
   avatar_url?: string | null
 }
@@ -97,7 +99,7 @@ export function usernameProblem(u: string): string | null {
 }
 
 const PROFILE_COLS = 'user_id,username,display_name,avatar_url'
-const toPerson = (p: Profile): Person => ({ id: p.user_id, username: p.username, name: p.display_name || p.username, avatar: p.avatar_url || undefined })
+const toPerson = (p: Profile): Person => ({ id: p.user_id, username: p.username ?? '', name: p.display_name || p.username || 'Друг', avatar: p.avatar_url || undefined })
 export const toFriendRef = (p: Person): FriendRef => ({ id: p.id, username: p.username, name: p.name, avatar: p.avatar })
 
 // ---------- profile ----------
@@ -105,7 +107,9 @@ export const toFriendRef = (p: Person): FriendRef => ({ id: p.id, username: p.us
 async function loadProfile(uid: string) {
   const { data, error } = await supabase.from('profiles').select(PROFILE_COLS).eq('user_id', uid).maybeSingle()
   if (error) throw error
-  const profile = (data as Profile | null) ?? null
+  const row = (data as Profile | null) ?? null
+  // a profile made in another app may have no username yet: Encore asks for one, as for a new account
+  const profile = row?.username ? row : null
   setSocial({ profile })
   // a photo picked before the account had a profile goes up now; otherwise the account's photo wins
   const local = readLocalAvatar()
@@ -301,7 +305,7 @@ export async function refreshFriends() {
 async function flushPendingStatuses() {
   const pending = read<Record<string, 'added' | 'dismissed'>>(PENDING, {})
   for (const [id, status] of Object.entries(pending)) {
-    const { error } = await supabase.from('shares').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
+    const { error } = await encore.from('shares').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
     if (error) throw error
     delete pending[id]
     write(PENDING, pending)
@@ -310,7 +314,7 @@ async function flushPendingStatuses() {
 
 async function loadInbox(uid: string) {
   await flushPendingStatuses()
-  const { data, error } = await supabase
+  const { data, error } = await encore
     .from('shares')
     .select('id,kind,from_user,payload,created_at')
     .eq('to_user', uid)
@@ -341,7 +345,7 @@ export function setShareStatus(id: string, status: 'added' | 'dismissed') {
 
 /** Latest version of a shared card (the sender may have added photos since). */
 export async function fetchShare(id: string): Promise<Share | null> {
-  const { data, error } = await supabase.from('shares').select('id,kind,from_user,payload,created_at').eq('id', id).maybeSingle()
+  const { data, error } = await encore.from('shares').select('id,kind,from_user,payload,created_at').eq('id', id).maybeSingle()
   if (error) throw error
   if (!data) return null
   const known = useSocial.getState().friends.find((f) => f.id === data.from_user)

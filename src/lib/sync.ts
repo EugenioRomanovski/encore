@@ -7,7 +7,9 @@ import { db, enqueueAll, isDemoId, markRemote, outboxKey, setOutboxListener, typ
  * Cloud sync with Supabase.
  * - IndexedDB stays the source of truth for the UI; the app works offline and without an account.
  * - Dexie hooks (db.ts) put every local change into `outbox`; push sends the current row (or a tombstone).
- * - Rows live in `public.records` (one per memory / event / ticket / media item, JSON in `data`);
+ * - The Supabase project is shared with the author's other apps (one account for all of them, see
+ *   docs/BACKEND.md): profiles and friendships are in `public`, Encore's own tables in schema `encore`.
+ * - Rows live in `encore.records` (one per memory / event / ticket / media item, JSON in `data`);
  *   photo, video, PDF and preview bytes live in the private `media` bucket under `<user_id>/<media_id>`.
  * - Pull is incremental by the server-side `updated_at`; a local change that hasn't been pushed yet wins.
  */
@@ -19,6 +21,8 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publis
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'encore.auth' },
 })
+/** Encore's own tables and functions (schema `encore`); shared ones (profiles, friendships) stay on `supabase`. */
+export const encore = supabase.schema('encore')
 
 type Kind = 'memory' | 'event' | 'ticket' | 'media'
 const KIND: Record<SyncedTable, Kind> = { memories: 'memory', events: 'event', tickets: 'ticket', media: 'media' }
@@ -91,7 +95,7 @@ async function ack(items: OutboxItem[]) {
 
 async function upsert(uid: string, rows: Row[]) {
   if (!rows.length) return
-  const { error } = await supabase.from('records').upsert(
+  const { error } = await encore.from('records').upsert(
     rows.map((r) => ({ user_id: uid, kind: r.kind, id: r.id, data: r.data, deleted: r.deleted })),
     { onConflict: 'user_id,kind,id' },
   )
@@ -149,7 +153,7 @@ async function shareWithFriends(item: OutboxItem, rec: Memory | PlannedEvent | u
   const to = (rec.friends || []).map((f) => f.id).filter((id) => id !== rec.sharedFrom?.userId)
   if (!to.length) return
   const kind = item.table === 'memories' ? 'memory' : 'event'
-  const { error } = await supabase.rpc('share_concert', { p_to: to, p_kind: kind, p_source: rec.id, p_payload: await sharePayload(kind, rec) })
+  const { error } = await encore.rpc('share_concert', { p_to: to, p_kind: kind, p_source: rec.id, p_payload: await sharePayload(kind, rec) })
   if (error) throw error
 }
 
@@ -225,7 +229,7 @@ async function pull(uid: string) {
   let from = saved ? new Date(new Date(saved).getTime() - 60_000).toISOString() : '1970-01-01T00:00:00Z'
   let newest = saved
   for (;;) {
-    const { data, error } = await supabase
+    const { data, error } = await encore
       .from('records')
       .select('kind,id,data,deleted,updated_at')
       .gt('updated_at', from)
@@ -265,7 +269,7 @@ async function downloadMissing(uid: string) {
   set({ downloading: ids.length })
   try {
     for (let i = 0; i < ids.length; i += 100) {
-      const { data, error } = await supabase.from('records').select('id,data,deleted').eq('kind', 'media').in('id', ids.slice(i, i + 100))
+      const { data, error } = await encore.from('records').select('id,data,deleted').eq('kind', 'media').in('id', ids.slice(i, i + 100))
       if (error) throw error
       for (const r of (data || []) as Row[]) {
         if (r.deleted || !r.data) continue
@@ -366,6 +370,7 @@ export function initSync() {
     void refreshPending()
     if (useSync.getState().user) requestSync()
   })
+  void signInFromEmailLink()
   supabase.auth.getSession().then(({ data }) => onUser(data.session?.user ?? null))
   supabase.auth.onAuthStateChange((_event, session) => {
     // defer: calling supabase from inside this callback can deadlock the auth client
@@ -377,6 +382,23 @@ export function initSync() {
 }
 
 // ---------- auth ----------
+
+/**
+ * The sign-in email is shared by all the author's apps (one Supabase project): its button links to
+ * `<emailRedirectTo>?token_hash=…&type=email`. Verify the token and drop it from the address.
+ */
+async function signInFromEmailLink() {
+  const params = new URLSearchParams(location.search)
+  const tokenHash = params.get('token_hash')
+  if (!tokenHash) return
+  const type = params.get('type') === 'signup' ? 'signup' : params.get('type') === 'magiclink' ? 'magiclink' : 'email'
+  params.delete('token_hash')
+  params.delete('type')
+  const rest = params.toString()
+  history.replaceState(history.state, '', location.pathname + (rest ? `?${rest}` : '') + location.hash)
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+  if (error) console.warn('Email link sign-in failed', error)
+}
 
 /** Email a one-time code. `signup` creates the account if needed; sign-in only works for existing accounts. */
 export async function sendCode(email: string, signup: boolean) {
