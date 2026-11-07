@@ -14,13 +14,29 @@ import { db, enqueueAll, isDemoId, markRemote, outboxKey, setOutboxListener, typ
  * - Pull is incremental by the server-side `updated_at`; a local change that hasn't been pushed yet wins.
  */
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://uvuifuyozscfcowuxdtr.supabase.co'
+// api.brainsome.app forwards to the shared Supabase project (uvuifuyozscfcowuxdtr.supabase.co):
+// *.supabase.co is blocked or slowed for some users without a VPN. See docs/BACKEND.md.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://api.brainsome.app'
 // publishable key: safe in the browser, access is enforced by RLS
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_gD0M11LHLg4PJWxA8rKatQ_zn69qbw_'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'encore.auth' },
 })
+const PUBLIC_FILES = '/storage/v1/object/public/'
+
+/**
+ * A public Storage link (avatars) saved with whatever API address was current then — e.g. the old
+ * *.supabase.co one — rewritten to the address this build uses. Other links are returned as they are.
+ */
+export function publicFileUrl(url: string): string
+export function publicFileUrl(url: string | null | undefined): string | undefined
+export function publicFileUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined
+  const i = url.indexOf(PUBLIC_FILES)
+  return i < 0 ? url : SUPABASE_URL.replace(/\/+$/, '') + url.slice(i)
+}
+
 /** Encore's own tables and functions (schema `encore`); shared ones (profiles, friendships) stay on `supabase`. */
 export const encore = supabase.schema('encore')
 

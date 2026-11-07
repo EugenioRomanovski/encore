@@ -4,8 +4,15 @@
 Сейчас в нём Encore и Wine Note; новые приложения добавляются по шаблону ниже.
 
 - Проект: `uvuifuyozscfcowuxdtr` (в панели пока называется «encore», имя можно поменять:
-  Project Settings → General). URL: `https://uvuifuyozscfcowuxdtr.supabase.co`,
-  публичный ключ: `sb_publishable_gD0M11LHLg4PJWxA8rKatQ_zn69qbw_` (доступ ограничен RLS).
+  Project Settings → General). Публичный ключ: `sb_publishable_gD0M11LHLg4PJWxA8rKatQ_zn69qbw_`
+  (доступ ограничен RLS).
+- **Адрес для приложений: `https://api.brainsome.app`**, не `*.supabase.co` (без VPN он открывается не везде).
+  Это прокси на VPS (HOSTKEY, `82.47.130.197`, рядом со scribe): пересылает REST, вход, Storage и WebSocket в
+  `https://uvuifuyozscfcowuxdtr.supabase.co`. Настройка — репозиторий scribe, `deploy/supabase-proxy/install.sh`
+  и workflow «Supabase proxy»; DNS — A-запись `api` домена brainsome.app на Vercel.
+  Переезд прокси на другой сервер: запустить скрипт там и поменять A-запись — приложения не трогать.
+- Публичные ссылки на файлы (аватары) не привязывать к адресу: в базе они есть с `api.brainsome.app`, клиенты
+  при показе переписывают адрес на свой (`publicFileUrl` в Encore, `avatarPathFromUrl` в Wine Note).
 - История схемы: `supabase/migrations/` в этом репозитории (имя файла = версия из `list_migrations`).
   Старые проекты: Wine Note жил в `zhgtrtqrhcsvcbidnuoe` (его миграции — в репозитории wine_note,
   `supabase/old-winenote-project/`).
@@ -72,7 +79,7 @@ supabase.schema('winenote').rpc('my_recommendations')
    notify pgrst, 'reload schema';
    ```
    и отметить `myapp` в Exposed schemas в панели (Project Settings → Data API).
-2. В приложении — тот же URL и публичный ключ, свой `storageKey` для сессии,
+2. В приложении — адрес `https://api.brainsome.app` и тот же публичный ключ, свой `storageKey` для сессии,
    `supabase.schema('myapp')` для своих таблиц.
 3. Вход: `signInWithOtp({ email, options: { emailRedirectTo: <адрес приложения> } })`; адрес добавить
    в Authentication → URL Configuration → Redirect URLs. Ссылку из письма

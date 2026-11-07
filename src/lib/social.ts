@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 import { uid as newId, type FriendRef, type Media } from './db'
 import { resizeImage } from './media'
-import { encore, setAfterSync, supabase, useSync } from './sync'
+import { encore, publicFileUrl, setAfterSync, supabase, useSync } from './sync'
 import { useUI } from '../store/ui'
 
 /*
@@ -212,7 +212,7 @@ export function useMyAvatar(): string | undefined {
   const profile = useSocial((s) => s.profile)
   const mine: LocalAvatar | null = local ? JSON.parse(local) : null
   if (!signedIn || !profile) return mine?.dataUrl
-  return mine?.pending ? mine.dataUrl : profile.avatar_url || undefined
+  return mine?.pending ? mine.dataUrl : publicFileUrl(profile.avatar_url)
 }
 
 /** Set the profile photo: kept on the device, and uploaded to the account when signed in. */

@@ -1,6 +1,7 @@
 import { Star } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 import { initials, personColor, TAG_COLORS } from '../lib/palette'
+import { publicFileUrl } from '../lib/sync'
 
 export function Stars({ value, size = 16, off = 'rgba(255,255,255,.28)', onSet }: { value: number; size?: number; off?: string; onSet?: (n: number) => void }) {
   return (
@@ -26,7 +27,7 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
 export function Avatar({ name, src, size = 36, style }: { name: string; src?: string | null; size?: number; style?: CSSProperties }) {
   return (
     <div className="avatar" style={{ width: size, height: size, background: personColor(name), fontSize: size * 0.34, overflow: 'hidden', ...style }}>
-      {src ? <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : initials(name)}
+      {src ? <img src={publicFileUrl(src)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : initials(name)}
     </div>
   )
 }
