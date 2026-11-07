@@ -84,7 +84,8 @@ supabase.schema('winenote').rpc('my_recommendations')
 ## Настройки в панели (один раз, вручную)
 
 Authentication:
-- **URL Configuration** → Redirect URLs: `https://encore-one-rho.vercel.app/**`,
+- **URL Configuration** → Redirect URLs: `https://encore.brainsome.app/**`,
+  `https://encore-one-rho.vercel.app/**`, `https://winenote.brainsome.app/**`,
   `https://wine-note-one.vercel.app/**`, `http://localhost:5173/**`. Без этого ссылка из письма для
   Wine Note откроет Site URL (Encore); вход кодом работает в любом случае.
 - **Email Templates** → Magic Link и Confirm signup — один текст на все приложения:
@@ -115,3 +116,5 @@ drop view public.shares;
 drop function public.are_friends(uuid, uuid);
 ```
 Старый проект Wine Note (`zhgtrtqrhcsvcbidnuoe`) после проверки — поставить на паузу или удалить.
+С 07.11.2026 Wine Note на Vercel собирается с переменными общего проекта; новых данных в старом
+проекте после копирования не было.
