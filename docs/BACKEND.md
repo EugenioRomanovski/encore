@@ -113,6 +113,7 @@ drop view public.records;
 drop view public.shares;
 drop function public.are_friends(uuid, uuid);
 ```
-Старый проект Wine Note (`zhgtrtqrhcsvcbidnuoe`) после проверки — поставить на паузу или удалить.
+Старый проект Wine Note (`zhgtrtqrhcsvcbidnuoe`) поставлен на паузу 07.11.2026 (оба пользователя
+проверили данные в общем проекте); через пару недель — удалить в панели.
 С 07.11.2026 Wine Note на Vercel собирается с переменными общего проекта; новых данных в старом
 проекте после копирования не было.
